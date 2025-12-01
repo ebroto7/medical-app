@@ -27,10 +27,10 @@ export default function PatientDashboardPage() {
           <p className="text-gray-600 mt-2">Registra y controla tu alimentación diaria</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Left Column - Calendar and Form */}
-          <div className="space-y-6">
-            <Card className="p-4">
+          <div className="space-y-6 md:col-span-1">
+            <Card className="p-4 bg-white/80 backdrop-blur-sm">
               <h2 className="text-lg font-semibold mb-4">Selecciona una fecha</h2>
               <Calendar
                 mode="single"
@@ -39,7 +39,7 @@ export default function PatientDashboardPage() {
               />
             </Card>
 
-            <div>
+            <div className="hidden md:block">
               <NutritionEntryForm
                 onSuccess={handleEntrySuccess}
               />
@@ -47,7 +47,7 @@ export default function PatientDashboardPage() {
           </div>
 
           {/* Right Column - Entries List */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 md:col-span-3">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
                 Entradas para {selectedDate.toLocaleDateString("es-ES", {
@@ -67,6 +67,13 @@ export default function PatientDashboardPage() {
                 onDelete={handleEntrySuccess}
               />
             )}
+          </div>
+
+          {/* Mobile Form */}
+          <div className="md:hidden">
+            <NutritionEntryForm
+              onSuccess={handleEntrySuccess}
+            />
           </div>
         </div>
       </div>

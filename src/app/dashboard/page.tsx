@@ -44,8 +44,8 @@ export default function DashboardRedirect() {
 
         // Redirect based on role
         if (userRole === "nutritionist") {
-          console.log("Redirecting to nutritionist search");
-          router.push("/dashboard/nutritionist/search");
+          console.log("Redirecting to nutritionist dashboard");
+          router.push("/dashboard/nutritionist");
         } else {
           console.log("Redirecting to patient dashboard");
           router.push("/dashboard/patient");

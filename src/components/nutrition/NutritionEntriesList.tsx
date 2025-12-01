@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
@@ -122,12 +123,14 @@ export function NutritionEntriesList({
             {entry.nutrition_images && entry.nutrition_images.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {entry.nutrition_images.map((image) => (
-                  <img
-                    key={image.id}
-                    src={image.image_url}
-                    alt="Comida"
-                    className="w-full h-32 object-cover rounded"
-                  />
+                  <div key={image.id} className="relative w-full h-32">
+                    <Image
+                      src={image.image_url}
+                      alt="Comida"
+                      fill
+                      className="object-cover rounded"
+                    />
+                  </div>
                 ))}
               </div>
             )}

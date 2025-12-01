@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -175,12 +176,14 @@ export default function EntryDetailPage() {
                 <label className="text-sm font-medium">Imágenes</label>
                 <div className="grid grid-cols-4 gap-2 mt-4">
                   {images.map((imageUrl, index) => (
-                    <img
-                      key={index}
-                      src={imageUrl}
-                      alt={`Image ${index}`}
-                      className="w-full h-24 object-cover rounded"
-                    />
+                    <div key={index} className="relative w-full h-24">
+                      <Image
+                        src={imageUrl}
+                        alt={`Image ${index}`}
+                        fill
+                        className="object-cover rounded"
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

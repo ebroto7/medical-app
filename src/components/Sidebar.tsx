@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { Menu, X, BookOpen, Users, Settings, LogOut, Search } from "lucide-react";
+import { Menu, X, BookOpen, Users, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/Logo";
 
 interface SidebarProps {
   role?: string | null;
@@ -32,9 +33,7 @@ export function Sidebar({ role }: SidebarProps) {
   const getMenuItems = () => {
     if (role === "nutritionist") {
       return [
-        { label: "Buscar Pacientes", icon: Search, href: "/dashboard/nutritionist/search" },
-        { label: "Solicitudes Pendientes", icon: Users, href: "/dashboard/nutritionist/requests" },
-        { label: "Mis Pacientes", icon: BookOpen, href: "/dashboard/nutritionist/patients" },
+        { label: "Mis Pacientes", icon: Users, href: "/dashboard/nutritionist/patients" },
         { label: "Perfil", icon: Settings, href: "/dashboard/profile" },
       ];
     } else {
@@ -65,18 +64,21 @@ export function Sidebar({ role }: SidebarProps) {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 z-50 transition-transform duration-300 ${
+        className={`fixed left-0 top-0 h-screen bg-background border-r border-border z-50 transition-transform duration-300 ${
           isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-64"
         } md:static md:translate-x-0`}
       >
         <div className="flex flex-col h-full p-4">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-xl font-bold text-gray-900">MedApp</h1>
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Logo size="md" />
+              <span className="text-lg font-bold text-foreground hidden sm:inline">NutriDiary</span>
+            </div>
             {isMobile && (
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1 hover:bg-accent/10 rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
@@ -94,10 +96,10 @@ export function Sidebar({ role }: SidebarProps) {
                     router.push(item.href);
                     if (isMobile) setIsOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-all duration-200 active:bg-accent/80 dark:hover:bg-accent/80"
                 >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon size={20} className="flex-shrink-0" />
+                  <span className="font-medium text-sm">{item.label}</span>
                 </button>
               );
             })}
@@ -119,7 +121,7 @@ export function Sidebar({ role }: SidebarProps) {
       {isMobile && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 p-3 bg-blue-600 text-white rounded-full shadow-lg z-40 md:hidden"
+          className="fixed bottom-6 right-6 p-3 bg-primary text-primary-foreground rounded-full shadow-lg z-40 md:hidden hover:shadow-xl transition-all duration-200"
         >
           <Menu size={24} />
         </button>

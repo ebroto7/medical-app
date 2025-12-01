@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -225,11 +226,12 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
               <div className="mt-4">
                 <div className="grid grid-cols-3 gap-2">
                   {previewUrls.map((url, index) => (
-                    <div key={index} className="relative">
-                      <img
+                    <div key={index} className="relative w-full h-24">
+                      <Image
                         src={url}
                         alt={`Preview ${index}`}
-                        className="w-full h-24 object-cover rounded"
+                        fill
+                        className="object-cover rounded"
                       />
                       <button
                         type="button"
