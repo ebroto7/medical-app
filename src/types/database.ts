@@ -21,6 +21,7 @@ export type Database = {
           description: string | null
           id: string
           meal_type: Database["public"]["Enums"]["meal_type"]
+          time: string | null
           updated_at: string | null
           user_id: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           description?: string | null
           id?: string
           meal_type: Database["public"]["Enums"]["meal_type"]
+          time?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           description?: string | null
           id?: string
           meal_type?: Database["public"]["Enums"]["meal_type"]
+          time?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -145,12 +148,100 @@ export type Database = {
         }
         Relationships: []
       }
+      training_sessions: {
+        Row: {
+          created_at: string | null
+          date: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          time: string
+          type: Database["public"]["Enums"]["training_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          time: string
+          type?: Database["public"]["Enums"]["training_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          time?: string
+          type?: Database["public"]["Enums"]["training_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nutritionist_comments: {
+        Row: {
+          id: string
+          nutritionist_id: string
+          entry_id: string | null
+          training_session_id: string | null
+          comment: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          nutritionist_id: string
+          entry_id?: string | null
+          training_session_id?: string | null
+          comment: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          nutritionist_id?: string
+          entry_id?: string | null
+          training_session_id?: string | null
+          comment?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutritionist_comments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "nutrition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nutritionist_comments_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_nutritionist_profiles: {
+        Args: { nutritionist_ids: string[] }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+        }[]
+      }
     }
     Enums: {
       meal_type:
@@ -159,6 +250,14 @@ export type Database = {
         | "lunch"
         | "afternoon-snack"
         | "dinner"
+        | "extra"
+      training_type:
+        | "cardio"
+        | "strength"
+        | "flexibility"
+        | "hiit"
+        | "yoga"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -292,6 +391,15 @@ export const Constants = {
         "lunch",
         "afternoon-snack",
         "dinner",
+        "extra",
+      ],
+      training_type: [
+        "cardio",
+        "strength",
+        "flexibility",
+        "hiit",
+        "yoga",
+        "other",
       ],
     },
   },

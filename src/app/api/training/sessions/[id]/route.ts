@@ -15,58 +15,6 @@ function createAuthenticatedClient(authToken: string) {
   );
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return Response.json(
-        { error: "Missing or invalid authorization header" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.slice(7);
-    const supabase = createAuthenticatedClient(token);
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return Response.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const { id } = await params;
-    const { data, error } = await supabase
-      .from("nutrition_entries")
-      .select(`
-        *,
-        nutrition_images (*)
-      `)
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
-
-    if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
-    }
-
-    return Response.json({ data });
-  } catch {
-    return Response.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -92,33 +40,43 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { date, mealType, description, time } = body;
+    const { time, type, durationMinutes, description } = body;
     const { id } = await params;
 
-    const { data: existingEntry } = await supabase
-      .from("nutrition_entries")
+    // Verify ownership
+    const { data: existingSession } = await supabase
+      .from("training_sessions")
       .select("user_id")
       .eq("id", id)
       .single();
 
-    if (!existingEntry) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
+    if (!existingSession) {
+      return Response.json({ error: "Session not found" }, { status: 404 });
     }
 
-    if (existingEntry.user_id !== user.id) {
+    if (existingSession.user_id !== user.id) {
       return Response.json(
-        { error: "You do not have permission to update this entry" },
+        { error: "You do not have permission to update this session" },
         { status: 403 }
       );
     }
 
+    // Validate type if provided
+    const validTypes = ["cardio", "strength", "flexibility", "hiit", "yoga", "other"];
+    if (type && !validTypes.includes(type)) {
+      return Response.json(
+        { error: `Invalid type. Must be one of: ${validTypes.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
-      .from("nutrition_entries")
+      .from("training_sessions")
       .update({
-        date,
-        meal_type: mealType,
-        description: description || null,
-        time: time || null,
+        time: time ?? undefined,
+        type: type ?? undefined,
+        duration_minutes: durationMinutes ?? null,
+        description: description ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
@@ -126,10 +84,6 @@ export async function PUT(
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data || data.length === 0) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
     }
 
     return Response.json({ data: data[0] });
@@ -167,25 +121,25 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const { data: existingEntry } = await supabase
-      .from("nutrition_entries")
+    const { data: existingSession } = await supabase
+      .from("training_sessions")
       .select("user_id")
       .eq("id", id)
       .single();
 
-    if (!existingEntry) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
+    if (!existingSession) {
+      return Response.json({ error: "Session not found" }, { status: 404 });
     }
 
-    if (existingEntry.user_id !== user.id) {
+    if (existingSession.user_id !== user.id) {
       return Response.json(
-        { error: "You do not have permission to delete this entry" },
+        { error: "You do not have permission to delete this session" },
         { status: 403 }
       );
     }
 
     const { error } = await supabase
-      .from("nutrition_entries")
+      .from("training_sessions")
       .delete()
       .eq("id", id);
 
@@ -193,7 +147,7 @@ export async function DELETE(
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ message: "Entry deleted" }, { status: 200 });
+    return Response.json({ message: "Session deleted" });
   } catch {
     return Response.json(
       { error: "Internal server error" },

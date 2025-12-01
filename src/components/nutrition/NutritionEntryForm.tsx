@@ -14,11 +14,21 @@ import { compressImage, formatFileSize, CompressionResult } from "@/lib/image-op
 
 const formSchema = z.object({
   date: z.string(),
-  mealType: z.enum(["breakfast", "mid-morning", "lunch", "afternoon-snack", "dinner"]),
+  time: z.string().optional(),
+  mealType: z.enum(["breakfast", "mid-morning", "lunch", "afternoon-snack", "dinner", "extra"]),
   description: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+// Round time to nearest 15 minutes
+function getRoundedTime(): string {
+  const now = new Date();
+  const minutes = Math.round(now.getMinutes() / 15) * 15;
+  now.setMinutes(minutes);
+  now.setSeconds(0);
+  return now.toTimeString().slice(0, 5);
+}
 
 interface NutritionEntryFormProps {
   onSuccess?: () => void;
@@ -36,6 +46,7 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date().toISOString().split("T")[0],
+      time: getRoundedTime(),
       mealType: "breakfast",
       description: "",
     },
@@ -53,10 +64,17 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
     );
   }
 
+  const MAX_IMAGES = 3;
+
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
 
     if (files.length === 0) return;
+
+    // Limit to max 3 images total
+    const remainingSlots = MAX_IMAGES - images.length;
+    if (remainingSlots <= 0) return;
+    const filesToProcess = files.slice(0, remainingSlots);
 
     setIsCompressing(true);
 
@@ -64,7 +82,7 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
       const compressedResults: CompressionResult[] = [];
       const compressedFiles: File[] = [];
 
-      for (const file of files) {
+      for (const file of filesToProcess) {
         const result = await compressImage(file);
         compressedResults.push(result);
         compressedFiles.push(result.file);
@@ -109,6 +127,7 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
         },
         body: JSON.stringify({
           date: data.date,
+          time: data.time || null,
           mealType: data.mealType,
           description: data.description,
         }),
@@ -173,8 +192,8 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
         <CardTitle>Nueva Entrada</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium">Fecha</label>
               <Input
@@ -184,18 +203,30 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Tipo de Comida</label>
-              <select
-                {...form.register("mealType")}
-                className="w-full mt-1 px-3 py-2 border rounded-md"
-              >
-                <option value="breakfast">Desayuno</option>
-                <option value="mid-morning">Media Mañana</option>
-                <option value="lunch">Comida</option>
-                <option value="afternoon-snack">Merienda</option>
-                <option value="dinner">Cena</option>
-              </select>
+              <label className="text-sm font-medium">
+                Hora <span className="text-gray-400 font-normal">- opcional</span>
+              </label>
+              <Input
+                type="time"
+                {...form.register("time")}
+                className="mt-1"
+              />
             </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Tipo de Comida</label>
+            <select
+              {...form.register("mealType")}
+              className="w-full mt-1 px-3 py-2 border rounded-md bg-white"
+            >
+              <option value="breakfast">Desayuno</option>
+              <option value="mid-morning">Media Mañana</option>
+              <option value="lunch">Comida</option>
+              <option value="afternoon-snack">Merienda</option>
+              <option value="dinner">Cena</option>
+              <option value="extra">Extra</option>
+            </select>
           </div>
 
           <div>
@@ -208,15 +239,22 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
           </div>
 
           <div>
-            <label className="text-sm font-medium">Imágenes</label>
+            <label className="text-sm font-medium">
+              Imágenes <span className="text-gray-400 font-normal">({images.length}/{MAX_IMAGES})</span>
+            </label>
             <Input
               type="file"
               multiple
               accept="image/*"
               onChange={handleImageSelect}
-              disabled={isCompressing}
+              disabled={isCompressing || images.length >= MAX_IMAGES}
               className="mt-1"
             />
+            {images.length >= MAX_IMAGES && (
+              <p className="text-sm text-amber-600 mt-2">
+                Máximo de {MAX_IMAGES} fotos alcanzado
+              </p>
+            )}
             {isCompressing && (
               <p className="text-sm text-blue-600 mt-2">
                 Optimizando imágenes para móvil...

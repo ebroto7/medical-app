@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import Lenis from "lenis";
-import gsap from "gsap";
-import ScrollTrigger from "gsap/ScrollTrigger";
+import { useIsomorphicLayoutEffect } from "@/hooks/use-isomorphic-layout-effect";
+import dynamic from "next/dynamic";
+import type Lenis from 'lenis';
+
+// Animation libraries are dynamically imported in effects to avoid SSR issues
 import { Header } from "@/components/Header";
 import { GradientBackground } from "@/components/GradientBackground";
 import { AnimatedHeading } from "@/components/AnimatedHeading";
@@ -21,7 +23,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-gsap.registerPlugin(ScrollTrigger);
 
 // Features data
 const features = [
@@ -125,6 +126,12 @@ export default function Home() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Mount effect
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Smart redirect
   useEffect(() => {
@@ -135,137 +142,201 @@ export default function Home() {
 
   // Initialize Lenis
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    });
+    if (!isMounted || typeof window === 'undefined') return;
+    
+    let lenis: Lenis;
+    let rafId: number;
 
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
+    const initLenis = async () => {
+      const LenisLib = (await import('lenis')).default;
+      lenis = new LenisLib({
+        duration: 1.2,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      });
 
-    const id = requestAnimationFrame(raf);
+      function raf(time: number) {
+        lenis.raf(time);
+        rafId = requestAnimationFrame(raf);
+      }
+
+      rafId = requestAnimationFrame(raf);
+    };
+
+    initLenis();
 
     return () => {
-      cancelAnimationFrame(id);
-      lenis.destroy();
+      if (rafId) cancelAnimationFrame(rafId);
+      if (lenis) lenis.destroy();
     };
-  }, []);
+  }, [isMounted]);
 
   // Hero animations
-  useEffect(() => {
-    const heroLogo = document.querySelector("[data-hero-logo]");
-    const heroTitle = document.querySelector("[data-hero-title]");
-    const heroDesc = document.querySelector("[data-hero-desc]");
-    const heroCTA = document.querySelector("[data-hero-cta]");
+  useIsomorphicLayoutEffect(() => {
+    if (!isMounted || typeof window === 'undefined') return;
 
-    if (heroLogo && heroTitle && heroDesc && heroCTA) {
-      const timeline = gsap.timeline();
+    const initHeroAnimation = async () => {
+      const gsapLib = await import('gsap');
+      const gsap = gsapLib.default;
 
-      timeline
-        .fromTo(
-          heroLogo,
-          { scale: 0.5, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.7)" }
-        )
-        .fromTo(
-          heroTitle,
-          { y: 30, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" },
-          "-=0.4"
-        )
-        .fromTo(
-          heroDesc,
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" },
-          "-=0.4"
-        )
-        .fromTo(
-          heroCTA,
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" },
-          "-=0.3"
-        );
-    }
-  }, []);
+      const heroLogo = document.querySelector("[data-hero-logo]");
+      const heroTitle = document.querySelector("[data-hero-title]");
+      const heroDesc = document.querySelector("[data-hero-desc]");
+      const heroCTA = document.querySelector("[data-hero-cta]");
+
+      if (heroLogo && heroTitle && heroDesc && heroCTA) {
+        const timeline = gsap.timeline();
+
+        timeline
+          .fromTo(
+            heroLogo,
+            { scale: 0.5, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.7)" }
+          )
+          .fromTo(
+            heroTitle,
+            { y: 30, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" },
+            "-=0.4"
+          )
+          .fromTo(
+            heroDesc,
+            { y: 20, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" },
+            "-=0.4"
+          )
+          .fromTo(
+            heroCTA,
+            { y: 20, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" },
+            "-=0.3"
+          );
+      }
+    };
+
+    initHeroAnimation();
+  }, [isMounted]);
 
   // Features staggered animation
-  useEffect(() => {
-    const featureCards = gsap.utils.toArray("[data-feature-card]") as HTMLElement[];
+  useIsomorphicLayoutEffect(() => {
+    if (!isMounted || typeof window === 'undefined') return;
 
-    if (featureCards.length > 0) {
-      featureCards.forEach((card, index) => {
-        gsap.fromTo(
-          card,
-          { y: 50, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.8,
-            delay: index * 0.15,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: card,
-              start: "top 80%",
-              end: "top 50%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      });
-    }
-  }, []);
+    const initFeatureAnimation = async () => {
+      const [gsapLib, ScrollTriggerLib] = await Promise.all([
+        import('gsap'),
+        import('gsap/ScrollTrigger')
+      ]);
+      const gsap = gsapLib.default;
+      const ScrollTrigger = ScrollTriggerLib.default;
+      
+      gsap.registerPlugin(ScrollTrigger);
+
+      const featureCards = gsap.utils.toArray("[data-feature-card]") as HTMLElement[];
+
+      if (featureCards.length > 0) {
+        featureCards.forEach((card, index) => {
+          gsap.fromTo(
+            card,
+            { y: 50, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.8,
+              delay: index * 0.15,
+              ease: "power3.out",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 80%",
+                end: "top 50%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        });
+      }
+    };
+
+    initFeatureAnimation();
+  }, [isMounted]);
 
   // Testimonials animation
-  useEffect(() => {
-    const testimonialCards = gsap.utils.toArray(
-      "[data-testimonial-card]"
-    ) as HTMLElement[];
+  useIsomorphicLayoutEffect(() => {
+    if (!isMounted || typeof window === 'undefined') return;
 
-    if (testimonialCards.length > 0) {
-      testimonialCards.forEach((card) => {
+    const initTestimonialsAnimation = async () => {
+      const [gsapLib, ScrollTriggerLib] = await Promise.all([
+        import('gsap'),
+        import('gsap/ScrollTrigger')
+      ]);
+      const gsap = gsapLib.default;
+      const ScrollTrigger = ScrollTriggerLib.default;
+      
+      gsap.registerPlugin(ScrollTrigger);
+
+      const testimonialCards = gsap.utils.toArray(
+        "[data-testimonial-card]"
+      ) as HTMLElement[];
+
+      if (testimonialCards.length > 0) {
+        testimonialCards.forEach((card) => {
+          gsap.fromTo(
+            card,
+            { x: -50, opacity: 0 },
+            {
+              x: 0,
+              opacity: 1,
+              duration: 0.8,
+              ease: "power3.out",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 75%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        });
+      }
+    };
+
+    initTestimonialsAnimation();
+  }, [isMounted]);
+
+  // CTA animation
+  useIsomorphicLayoutEffect(() => {
+    if (!isMounted || typeof window === 'undefined') return;
+
+    const initCTAAnimation = async () => {
+      const [gsapLib, ScrollTriggerLib] = await Promise.all([
+        import('gsap'),
+        import('gsap/ScrollTrigger')
+      ]);
+      const gsap = gsapLib.default;
+      const ScrollTrigger = ScrollTriggerLib.default;
+      
+      gsap.registerPlugin(ScrollTrigger);
+
+      const ctaSection = document.querySelector("[data-cta-section]");
+
+      if (ctaSection) {
         gsap.fromTo(
-          card,
-          { x: -50, opacity: 0 },
+          ctaSection,
+          { scale: 0.95, opacity: 0 },
           {
-            x: 0,
+            scale: 1,
             opacity: 1,
             duration: 0.8,
             ease: "power3.out",
             scrollTrigger: {
-              trigger: card,
-              start: "top 75%",
+              trigger: ctaSection,
+              start: "top 70%",
               toggleActions: "play none none none",
             },
           }
         );
-      });
-    }
-  }, []);
+      }
+    };
 
-  // CTA animation
-  useEffect(() => {
-    const ctaSection = document.querySelector("[data-cta-section]");
-
-    if (ctaSection) {
-      gsap.fromTo(
-        ctaSection,
-        { scale: 0.95, opacity: 0 },
-        {
-          scale: 1,
-          opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ctaSection,
-            start: "top 70%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-    }
-  }, []);
+    initCTAAnimation();
+  }, [isMounted]);
 
   if (isLoading) {
     return (

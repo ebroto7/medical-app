@@ -36,15 +36,16 @@ export async function GET() {
   const patientIds = connections.map((c) => c.patient_id);
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, full_name")
+    .select("id, full_name, email")
     .in("id", patientIds);
 
-  const profileMap: Record<string, { id: string; fullName: string }> = {};
+  const profileMap: Record<string, { id: string; fullName: string; email: string }> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (profiles || []).forEach((profile: any) => {
     profileMap[profile.id] = {
       id: profile.id,
-      fullName: profile.full_name || "Paciente",
+      fullName: profile.full_name || profile.email || "Paciente",
+      email: profile.email || "",
     };
   });
 
@@ -54,6 +55,7 @@ export async function GET() {
     patient: profileMap[conn.patient_id] || {
       id: conn.patient_id,
       fullName: "Paciente",
+      email: "",
     },
     connectedAt: conn.connected_at,
   }));

@@ -15,10 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="antialiased h-full min-h-screen" style={{
-        background: "linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 25%, #f5f3ff 50%, #faf5ff 75%, #fef3c7 100%)",
-        backgroundAttachment: "fixed"
-      }}>
+      <body className="antialiased h-full min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 via-violet-50 via-purple-50 to-amber-50">
         <AuthProvider>
           {children}
           <Toaster />

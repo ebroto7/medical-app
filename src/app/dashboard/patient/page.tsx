@@ -3,77 +3,98 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { NutritionEntryForm } from "@/components/nutrition/NutritionEntryForm";
-import { NutritionEntriesList } from "@/components/nutrition/NutritionEntriesList";
-import { Calendar } from "@/components/ui/calendar";
+import { TrainingEntryForm } from "@/components/training/TrainingEntryForm";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarViewSelector, CalendarView } from "@/components/calendar/CalendarViewSelector";
+import { DayView } from "@/components/calendar/DayView";
+import { WeekView } from "@/components/calendar/WeekView";
+import { MonthView } from "@/components/calendar/MonthView";
+import { Utensils, Dumbbell } from "lucide-react";
 
 export default function PatientDashboardPage() {
-  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const dateString = selectedDate.toISOString().split("T")[0];
+  const [activeFormTab, setActiveFormTab] = useState<"meal" | "training">("meal");
 
   const handleEntrySuccess = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+    setCalendarView("day");
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Diario Nutricional</h1>
-          <p className="text-gray-600 mt-2">Registra y controla tu alimentación diaria</p>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Mi Diario</h1>
+            <p className="text-gray-600 mt-1">Registra tu alimentación y entrenamientos</p>
+          </div>
+          <CalendarViewSelector 
+            currentView={calendarView} 
+            onViewChange={setCalendarView} 
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Left Column - Calendar and Form */}
-          <div className="space-y-6 md:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Forms */}
+          <div className="lg:col-span-1 space-y-4">
             <Card className="p-4 bg-white/80 backdrop-blur-sm">
-              <h2 className="text-lg font-semibold mb-4">Selecciona una fecha</h2>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-              />
+              <Tabs value={activeFormTab} onValueChange={(v) => setActiveFormTab(v as "meal" | "training")}>
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="meal" className="flex items-center gap-2">
+                    <Utensils className="h-4 w-4" />
+                    Comida
+                  </TabsTrigger>
+                  <TabsTrigger value="training" className="flex items-center gap-2">
+                    <Dumbbell className="h-4 w-4" />
+                    Entreno
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="meal" className="mt-0">
+                  <NutritionEntryForm onSuccess={handleEntrySuccess} />
+                </TabsContent>
+                <TabsContent value="training" className="mt-0">
+                  <TrainingEntryForm onSuccess={handleEntrySuccess} />
+                </TabsContent>
+              </Tabs>
             </Card>
-
-            <div className="hidden md:block">
-              <NutritionEntryForm
-                onSuccess={handleEntrySuccess}
-              />
-            </div>
           </div>
 
-          {/* Right Column - Entries List */}
-          <div className="space-y-6 md:col-span-3">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Entradas para {selectedDate.toLocaleDateString("es-ES", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </h2>
-            </div>
-
-            {user && (
-              <NutritionEntriesList
-                key={refreshKey}
-                userId={user.id}
-                date={dateString}
-                onDelete={handleEntrySuccess}
-              />
-            )}
-          </div>
-
-          {/* Mobile Form */}
-          <div className="md:hidden">
-            <NutritionEntryForm
-              onSuccess={handleEntrySuccess}
-            />
+          {/* Right Column - Calendar View */}
+          <div className="lg:col-span-2">
+            <Card className="p-4 sm:p-6 bg-white/80 backdrop-blur-sm">
+              {calendarView === "day" && (
+                <DayView
+                  key={refreshKey}
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  onRefresh={handleEntrySuccess}
+                />
+              )}
+              {calendarView === "week" && (
+                <WeekView
+                  key={refreshKey}
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  onDayClick={handleDayClick}
+                />
+              )}
+              {calendarView === "month" && (
+                <MonthView
+                  key={refreshKey}
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  onDayClick={handleDayClick}
+                />
+              )}
+            </Card>
           </div>
         </div>
       </div>

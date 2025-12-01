@@ -1,14 +1,19 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { Database } from "@/types/database";
 
-function createAuthenticatedClient(authToken: string) {
-  return createClient<Database>(
+async function createSupabaseClient() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
         },
       },
     }
@@ -17,16 +22,7 @@ function createAuthenticatedClient(authToken: string) {
 
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return Response.json(
-        { error: "Missing or invalid authorization header" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.slice(7);
-    const supabase = createAuthenticatedClient(token);
+    const supabase = await createSupabaseClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -38,6 +34,8 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     let query = supabase
       .from("nutrition_entries")
@@ -49,11 +47,13 @@ export async function GET(request: Request) {
 
     if (date) {
       query = query.eq("date", date);
+    } else if (startDate && endDate) {
+      query = query.gte("date", startDate).lte("date", endDate);
     }
 
-    const { data, error: queryError } = await query.order("date", {
-      ascending: false,
-    });
+    const { data, error: queryError } = await query
+      .order("date", { ascending: false })
+      .order("time", { ascending: true, nullsFirst: true });
 
     if (queryError) {
       return Response.json({ error: queryError.message }, { status: 500 });
@@ -70,16 +70,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return Response.json(
-        { error: "Missing or invalid authorization header" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.slice(7);
-    const supabase = createAuthenticatedClient(token);
+    const supabase = await createSupabaseClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -90,7 +81,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { date, mealType, description } = body;
+    const { date, mealType, description, time } = body;
 
     if (!date || !mealType) {
       return Response.json(
@@ -106,6 +97,7 @@ export async function POST(request: Request) {
         date,
         meal_type: mealType,
         description: description || null,
+        time: time || null,
       })
       .select();
 

@@ -15,10 +15,7 @@ function createAuthenticatedClient(authToken: string) {
   );
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -39,23 +36,28 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
-    const { data, error } = await supabase
-      .from("nutrition_entries")
-      .select(`
-        *,
-        nutrition_images (*)
-      `)
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get("date");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
-    if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+    let query = supabase
+      .from("training_sessions")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (date) {
+      query = query.eq("date", date);
+    } else if (startDate && endDate) {
+      query = query.gte("date", startDate).lte("date", endDate);
     }
 
-    if (!data) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
+    const { data, error: queryError } = await query
+      .order("date", { ascending: false })
+      .order("time", { ascending: true });
+
+    if (queryError) {
+      return Response.json({ error: queryError.message }, { status: 500 });
     }
 
     return Response.json({ data });
@@ -67,10 +69,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -92,47 +91,41 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { date, mealType, description, time } = body;
-    const { id } = await params;
+    const { date, time, type, durationMinutes, description } = body;
 
-    const { data: existingEntry } = await supabase
-      .from("nutrition_entries")
-      .select("user_id")
-      .eq("id", id)
-      .single();
-
-    if (!existingEntry) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
+    if (!date || !time || !type) {
+      return Response.json(
+        { error: "Missing required fields: date, time, and type are required" },
+        { status: 400 }
+      );
     }
 
-    if (existingEntry.user_id !== user.id) {
+    // Validate type
+    const validTypes = ["cardio", "strength", "flexibility", "hiit", "yoga", "other"];
+    if (!validTypes.includes(type)) {
       return Response.json(
-        { error: "You do not have permission to update this entry" },
-        { status: 403 }
+        { error: `Invalid type. Must be one of: ${validTypes.join(", ")}` },
+        { status: 400 }
       );
     }
 
     const { data, error } = await supabase
-      .from("nutrition_entries")
-      .update({
+      .from("training_sessions")
+      .insert({
+        user_id: user.id,
         date,
-        meal_type: mealType,
+        time,
+        type,
+        duration_minutes: durationMinutes || null,
         description: description || null,
-        time: time || null,
-        updated_at: new Date().toISOString(),
       })
-      .eq("id", id)
       .select();
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    if (!data || data.length === 0) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
-    }
-
-    return Response.json({ data: data[0] });
+    return Response.json({ data }, { status: 201 });
   } catch {
     return Response.json(
       { error: "Internal server error" },
@@ -141,10 +134,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -165,35 +155,27 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
 
-    const { data: existingEntry } = await supabase
-      .from("nutrition_entries")
-      .select("user_id")
-      .eq("id", id)
-      .single();
-
-    if (!existingEntry) {
-      return Response.json({ error: "Entry not found" }, { status: 404 });
-    }
-
-    if (existingEntry.user_id !== user.id) {
+    if (!id) {
       return Response.json(
-        { error: "You do not have permission to delete this entry" },
-        { status: 403 }
+        { error: "Missing session id" },
+        { status: 400 }
       );
     }
 
     const { error } = await supabase
-      .from("nutrition_entries")
+      .from("training_sessions")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ message: "Entry deleted" }, { status: 200 });
+    return Response.json({ success: true });
   } catch {
     return Response.json(
       { error: "Internal server error" },

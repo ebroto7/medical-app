@@ -17,6 +17,7 @@ const mealTypeLabels: Record<string, string> = {
   lunch: "Comida",
   "afternoon-snack": "Merienda",
   dinner: "Cena",
+  extra: "Extra",
 };
 
 interface NutritionEntriesListProps {

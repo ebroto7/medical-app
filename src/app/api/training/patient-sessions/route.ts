@@ -56,13 +56,10 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get patient's entries
+    // Get patient's training sessions
     let query = supabase
-      .from("nutrition_entries")
-      .select(`
-        *,
-        nutrition_images (*)
-      `)
+      .from("training_sessions")
+      .select("*")
       .eq("user_id", patientId);
 
     if (date) {
@@ -73,7 +70,7 @@ export async function GET(request: Request) {
 
     const { data, error: queryError } = await query
       .order("date", { ascending: false })
-      .order("time", { ascending: true, nullsFirst: true });
+      .order("time", { ascending: true });
 
     if (queryError) {
       return Response.json({ error: queryError.message }, { status: 500 });
@@ -81,7 +78,7 @@ export async function GET(request: Request) {
 
     return Response.json({ data });
   } catch (error) {
-    console.error("Error fetching patient entries:", error);
+    console.error("Error fetching patient training sessions:", error);
     return Response.json(
       { error: "Internal server error" },
       { status: 500 }
