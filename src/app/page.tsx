@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsomorphicLayoutEffect } from "@/hooks/use-isomorphic-layout-effect";
 import dynamic from "next/dynamic";
@@ -123,7 +122,6 @@ function FAQItem({
 }
 
 export default function Home() {
-  const router = useRouter();
   const { user, isLoading } = useAuth();
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -133,12 +131,6 @@ export default function Home() {
     setIsMounted(true);
   }, []);
 
-  // Smart redirect
-  useEffect(() => {
-    if (!isLoading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, isLoading, router]);
 
   // Initialize Lenis
   useEffect(() => {
