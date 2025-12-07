@@ -32,9 +32,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check current session and fetch role
     const checkAuth = async () => {
       try {
-        // Add timeout to prevent indefinite waiting
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Auth check timeout")), 5000)
+        // Graceful timeout - resolves with null instead of throwing error
+        // If timeout occurs, clears potentially stale/corrupted session cookies
+        const timeoutPromise = new Promise((resolve) =>
+          setTimeout(() => {
+            console.warn("Auth timeout - clearing potentially stale session");
+            supabase.auth.signOut().catch(() => {}); // Clear corrupted cookies
+            resolve({ data: { session: null } });
+          }, 10000)
         );
 
         const sessionPromise = supabase.auth.getSession();
@@ -47,13 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const session = sessionResult?.data?.session;
 
         setUser(session?.user || null);
-        setToken(session?.user ? "token" : null); // Placeholder token
+        setToken(session?.access_token || null);
 
         // Fetch user role from profiles table with timeout
         if (session?.user) {
           try {
-            const roleTimeout = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("Role fetch timeout")), 3000)
+            const roleTimeout = new Promise((resolve) =>
+              setTimeout(() => {
+                console.warn("Role fetch timeout - continuing without role");
+                resolve({ data: null });
+              }, 8000)
             );
 
             const profilePromise = supabase
@@ -78,6 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error("Auth check error:", error);
+        // Try to clear potentially corrupted session
+        supabase.auth.signOut().catch(() => {});
         setUser(null);
         setToken(null);
         setRole(null);

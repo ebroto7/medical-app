@@ -1,50 +1,47 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { Database } from "@/types/database";
+import { createClient } from "@/utils/supabase/server";
+import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
+import { AuthenticationError, RoleError } from "@/lib/auth/errors";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
+  try {
+    // 1. Require authentication
+    const user = await requireAuth();
+
+    // 2. Require patient role
+    await requireRole(user.id, ["patient"]);
+
+    // 3. Get connected nutritionists for this patient
+    const supabase = await createClient();
+    const { data: connections } = await supabase
+      .from("patient_nutritionist_connections")
+      .select("nutritionist_id")
+      .eq("patient_id", user.id);
+
+    if (!connections || connections.length === 0) {
+      return Response.json({ data: [] });
     }
-  );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const nutritionistIds = connections.map((c) => c.nutritionist_id);
 
-  // Get connected nutritionists for this patient
-  const { data: connections } = await supabase
-    .from("patient_nutritionist_connections")
-    .select("nutritionist_id")
-    .eq("patient_id", user.id);
+    // Get nutritionist profiles
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", nutritionistIds);
 
-  if (!connections || connections.length === 0) {
-    return Response.json({ data: [] });
+    const formattedNutritionists = (profiles || []).map((profile) => ({
+      id: profile.id,
+      fullName: profile.full_name || "Nutricionista",
+    }));
+
+    return Response.json({ data: formattedNutritionists });
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return Response.json({ error: error.message }, { status: 401 });
+    }
+    if (error instanceof RoleError) {
+      return Response.json({ error: "Access denied: patient role required" }, { status: 403 });
+    }
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const nutritionistIds = connections.map((c) => c.nutritionist_id);
-
-  // Get nutritionist profiles
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in("id", nutritionistIds);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const formattedNutritionists = (profiles || []).map((profile: any) => ({
-    id: profile.id,
-    fullName: profile.full_name || "Nutricionista",
-  }));
-
-  return Response.json({ data: formattedNutritionists });
 }

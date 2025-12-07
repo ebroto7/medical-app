@@ -1,6 +1,6 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { Database } from "@/types/database";
+import { createClient } from "@/utils/supabase/server";
+import { requireAuth, requireRole, canAccessPatientData } from "@/lib/auth/api-helpers";
+import { AuthenticationError, RoleError } from "@/lib/auth/errors";
 
 export async function GET(request: Request) {
   try {
@@ -11,52 +11,26 @@ export async function GET(request: Request) {
     const endDate = searchParams.get("endDate");
 
     if (!patientId) {
-      return Response.json(
-        { error: "patientId required" },
-        { status: 400 }
-      );
+      return Response.json({ error: "patientId required" }, { status: 400 });
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll(); },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          },
-        },
-      }
-    );
+    // 1. Require authentication
+    const user = await requireAuth();
 
-    const { data: { user: nutritionist } } = await supabase.auth.getUser();
-    if (!nutritionist) {
-      return Response.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    // 2. Require nutritionist role
+    await requireRole(user.id, ["nutritionist"]);
 
-    // Check if nutritionist is connected to this patient
-    const { data: connection } = await supabase
-      .from("patient_nutritionist_connections")
-      .select("id")
-      .eq("patient_id", patientId)
-      .eq("nutritionist_id", nutritionist.id)
-      .single();
-
-    if (!connection) {
+    // 3. Check if nutritionist is connected to this patient
+    const hasAccess = await canAccessPatientData(user.id, patientId);
+    if (!hasAccess) {
       return Response.json(
         { error: "You are not connected to this patient" },
         { status: 403 }
       );
     }
 
-    // Get patient's entries
+    // 4. Get patient's entries
+    const supabase = await createClient();
     let query = supabase
       .from("nutrition_entries")
       .select(`
@@ -81,10 +55,13 @@ export async function GET(request: Request) {
 
     return Response.json({ data });
   } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return Response.json({ error: error.message }, { status: 401 });
+    }
+    if (error instanceof RoleError) {
+      return Response.json({ error: "Access denied: nutritionist role required" }, { status: 403 });
+    }
     console.error("Error fetching patient entries:", error);
-    return Response.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

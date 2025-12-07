@@ -114,7 +114,7 @@ export async function middleware(request: NextRequest) {
 
         // Protect patient routes - only patients can access
         if (isPatientRoute && userRole !== "patient") {
-          return NextResponse.redirect(new URL("/dashboard/nutritionist/search", request.url));
+          return NextResponse.redirect(new URL("/dashboard/nutritionist", request.url));
         }
       } catch (error) {
         console.error("Error checking user role in middleware:", error);

@@ -1,45 +1,48 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { Database } from "@/types/database";
+import { createClient } from "@/utils/supabase/server";
+import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
+import { AuthenticationError, RoleError } from "@/lib/auth/errors";
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { requestId } = body;
+  try {
+    const body = await request.json();
+    const { requestId } = body;
 
-  if (!requestId) {
-    return Response.json({ error: "Request ID required" }, { status: 400 });
-  }
-
-  const cookieStore = await cookies();
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
+    if (!requestId) {
+      return Response.json({ error: "Request ID required" }, { status: 400 });
     }
-  );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    // 1. Require authentication
+    const user = await requireAuth();
 
-  const { data: requestData } = await supabase
-    .from("nutritionist_requests")
-    .select("patient_id")
-    .eq("id", requestId)
-    .single();
+    // 2. Require patient role
+    await requireRole(user.id, ["patient"]);
 
-  if (!requestData || requestData.patient_id !== user.id) {
-    return Response.json({ error: "Unauthorized" }, { status: 403 });
+    // 3. Verify request belongs to this patient
+    const supabase = await createClient();
+    const { data: requestData } = await supabase
+      .from("nutritionist_requests")
+      .select("patient_id")
+      .eq("id", requestId)
+      .single();
+
+    if (!requestData || requestData.patient_id !== user.id) {
+      return Response.json({ error: "Request not found or unauthorized" }, { status: 403 });
+    }
+
+    // 4. Reject request
+    await supabase
+      .from("nutritionist_requests")
+      .update({ status: "rejected" })
+      .eq("id", requestId);
+
+    return Response.json({ success: true, message: "Rejected" }, { status: 200 });
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return Response.json({ error: error.message }, { status: 401 });
+    }
+    if (error instanceof RoleError) {
+      return Response.json({ error: "Access denied: patient role required" }, { status: 403 });
+    }
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  await supabase.from("nutritionist_requests").update({ status: "rejected" }).eq("id", requestId);
-
-  return Response.json({ success: true, message: "Rejected" }, { status: 200 });
 }

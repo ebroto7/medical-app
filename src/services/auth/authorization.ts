@@ -49,7 +49,6 @@ class AuthorizationService {
         .select("id")
         .eq("patient_id", patientId)
         .eq("nutritionist_id", nutritionistId)
-        .eq("status", "approved")
         .single();
       if (error || !data) {
         throw new AuthorizationError("Nutritionist is not connected to this patient");
@@ -66,7 +65,6 @@ class AuthorizationService {
         .select("id")
         .eq("patient_id", patientId)
         .eq("nutritionist_id", userId)
-        .eq("status", "approved")
         .single();
       return !!data;
     } catch {
