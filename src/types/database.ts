@@ -51,19 +51,19 @@ export type Database = {
         Row: {
           entry_id: string
           id: string
-          image_url: string
+          storage_path: string
           uploaded_at: string | null
         }
         Insert: {
           entry_id: string
           id?: string
-          image_url: string
+          storage_path: string
           uploaded_at?: string | null
         }
         Update: {
           entry_id?: string
           id?: string
-          image_url?: string
+          storage_path?: string
           uploaded_at?: string | null
         }
         Relationships: [

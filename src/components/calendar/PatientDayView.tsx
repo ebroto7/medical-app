@@ -22,8 +22,13 @@ import { es } from "date-fns/locale";
 import { EntryDetailDialog } from "@/components/nutrition/EntryDetailDialog";
 import { TrainingDetailDialog } from "@/components/training/TrainingDetailDialog";
 
+// Extended type that includes image_url from API response (signed URL)
+type NutritionImageWithUrl = Database["public"]["Tables"]["nutrition_images"]["Row"] & {
+  image_url: string;
+};
+
 type NutritionEntry = Database["public"]["Tables"]["nutrition_entries"]["Row"] & {
-  nutrition_images?: Database["public"]["Tables"]["nutrition_images"]["Row"][];
+  nutrition_images?: NutritionImageWithUrl[];
 };
 type TrainingSession = Database["public"]["Tables"]["training_sessions"]["Row"];
 
@@ -155,7 +160,7 @@ export function PatientDayView({ patientId, selectedDate, onDateChange }: Patien
                 <div className="flex gap-2 mt-2">
                   {entry.nutrition_images.slice(0, 3).map((img) => (
                     <div key={img.id} className="relative w-16 h-16 rounded overflow-hidden">
-                      <Image src={img.image_url} alt="" fill className="object-cover" />
+                      <Image src={img.image_url} alt="" fill className="object-cover" unoptimized />
                     </div>
                   ))}
                   {entry.nutrition_images.length > 3 && (

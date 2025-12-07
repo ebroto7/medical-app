@@ -38,7 +38,7 @@ export async function DELETE(
       .from("nutrition_images")
       .select(`
         id,
-        image_url,
+        storage_path,
         nutrition_entries!inner(user_id)
       `)
       .eq("id", id)
@@ -57,18 +57,13 @@ export async function DELETE(
       );
     }
 
-    // Extract storage path from URL and delete from storage
-    // URL format: .../nutrition-images/userId/entryId/filename?...
-    try {
-      const url = new URL(image.image_url);
-      const pathMatch = url.pathname.match(/nutrition-images\/(.+)/);
-      if (pathMatch) {
-        const storagePath = decodeURIComponent(pathMatch[1]);
-        await supabase.storage.from("nutrition-images").remove([storagePath]);
+    // Delete from storage using storage_path directly
+    if (image.storage_path) {
+      try {
+        await supabase.storage.from("nutrition-images").remove([image.storage_path]);
+      } catch {
+        console.error("Failed to delete from storage");
       }
-    } catch {
-      // Continue even if storage deletion fails
-      console.error("Failed to delete from storage");
     }
 
     // Delete from database

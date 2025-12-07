@@ -16,8 +16,13 @@ import { Utensils, Clock, MessageSquare, Send, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+// Extended type that includes image_url from API response (signed URL)
+type NutritionImageWithUrl = Database["public"]["Tables"]["nutrition_images"]["Row"] & {
+  image_url: string;
+};
+
 type NutritionEntry = Database["public"]["Tables"]["nutrition_entries"]["Row"] & {
-  nutrition_images?: Database["public"]["Tables"]["nutrition_images"]["Row"][];
+  nutrition_images?: NutritionImageWithUrl[];
 };
 
 type NutritionistComment = Database["public"]["Tables"]["nutritionist_comments"]["Row"] & {
@@ -167,6 +172,7 @@ export function EntryDetailDialog({
                         fill
                         className="object-cover"
                         sizes="(max-width: 640px) 50vw, 33vw"
+                        unoptimized
                       />
                     </button>
                   ))}

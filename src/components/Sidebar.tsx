@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { Menu, X, BookOpen, Users, Settings, LogOut } from "lucide-react";
+import { Menu, X, BookOpen, Users, Settings, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 
@@ -14,7 +14,8 @@ interface SidebarProps {
 export function Sidebar({ role }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const { signOut } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { signOut, token } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -30,16 +31,41 @@ export function Sidebar({ role }: SidebarProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Fetch unread notifications count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch("/api/notifications?unread=true", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const { data } = await res.json();
+          setUnreadCount(data?.length || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    };
+
+    fetchUnreadCount();
+    // Poll every 30 seconds for new notifications
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
+
   const getMenuItems = () => {
     if (role === "nutritionist") {
       return [
         { label: "Mis Pacientes", icon: Users, href: "/dashboard/nutritionist/patients" },
+        { label: "Notificaciones", icon: Bell, href: "/dashboard/notifications", badge: unreadCount },
         { label: "Perfil", icon: Settings, href: "/dashboard/profile" },
       ];
     } else {
       return [
         { label: "Mi Diario", icon: BookOpen, href: "/dashboard/patient" },
         { label: "Nutricionistas", icon: Users, href: "/dashboard/patient/nutritionists" },
+        { label: "Notificaciones", icon: Bell, href: "/dashboard/notifications", badge: unreadCount },
         { label: "Perfil", icon: Settings, href: "/dashboard/profile" },
       ];
     }
@@ -98,7 +124,14 @@ export function Sidebar({ role }: SidebarProps) {
                   }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-all duration-200 active:bg-accent/80 dark:hover:bg-accent/80"
                 >
-                  <Icon size={20} className="flex-shrink-0" />
+                  <div className="relative flex-shrink-0">
+                    <Icon size={20} />
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full">
+                        {item.badge > 9 ? "9+" : item.badge}
+                      </span>
+                    )}
+                  </div>
                   <span className="font-medium text-sm">{item.label}</span>
                 </button>
               );

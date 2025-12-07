@@ -107,24 +107,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get signed URL (valid for 1 hour)
-    const { data: urlData, error: signedUrlError } = await supabase.storage
-      .from("nutrition-images")
-      .createSignedUrl(filePath, 3600);
-
-    if (signedUrlError) {
-      return Response.json(
-        { error: signedUrlError.message },
-        { status: 500 }
-      );
-    }
-
-    // Save image record to database
+    // Save storage path to database (NOT the URL)
     const { data: imageData, error: dbError } = await supabase
       .from("nutrition_images")
       .insert({
         entry_id: entryId,
-        image_url: urlData.signedUrl,
+        storage_path: filePath,
       })
       .select();
 
@@ -132,7 +120,17 @@ export async function POST(request: Request) {
       return Response.json({ error: dbError.message }, { status: 500 });
     }
 
-    return Response.json({ data: imageData[0] }, { status: 201 });
+    // Generate signed URL for immediate use by frontend
+    const { data: signedUrlData } = await supabase.storage
+      .from("nutrition-images")
+      .createSignedUrl(filePath, 43200); // 12 hours
+
+    return Response.json({
+      data: {
+        ...imageData[0],
+        image_url: signedUrlData?.signedUrl || "",
+      },
+    }, { status: 201 });
   } catch (error) {
     console.error("Upload error:", error);
     return Response.json(

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth, requireRole, canAccessPatientData } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
+import { addSignedUrlsToEntries } from "@/lib/storage/signed-urls";
 
 export async function GET(request: Request) {
   try {
@@ -53,7 +54,10 @@ export async function GET(request: Request) {
       return Response.json({ error: queryError.message }, { status: 500 });
     }
 
-    return Response.json({ data });
+    // Add signed URLs to images
+    const dataWithSignedUrls = await addSignedUrlsToEntries(supabase, data || []);
+
+    return Response.json({ data: dataWithSignedUrls });
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return Response.json({ error: error.message }, { status: 401 });

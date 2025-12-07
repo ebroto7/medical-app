@@ -75,6 +75,7 @@ export function ImageLightbox({ images, currentIndex, onClose, onNavigate }: Ima
           className="object-contain"
           sizes="90vw"
           priority
+          unoptimized
         />
       </div>
 

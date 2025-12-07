@@ -6,19 +6,20 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Utensils, 
-  Dumbbell, 
-  Heart, 
-  Zap, 
-  Activity, 
-  Sparkles, 
+import {
+  Utensils,
+  Dumbbell,
+  Heart,
+  Zap,
+  Activity,
+  Sparkles,
   MoreHorizontal,
   Clock,
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Pencil
+  Pencil,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -27,8 +28,13 @@ import { EditTrainingDialog } from "@/components/training/EditTrainingDialog";
 import { EntryDetailDialog } from "@/components/nutrition/EntryDetailDialog";
 import { TrainingDetailDialog } from "@/components/training/TrainingDetailDialog";
 
+// Extended type that includes image_url from API response (signed URL)
+type NutritionImageWithUrl = Database["public"]["Tables"]["nutrition_images"]["Row"] & {
+  image_url: string;
+};
+
 type NutritionEntry = Database["public"]["Tables"]["nutrition_entries"]["Row"] & {
-  nutrition_images?: Database["public"]["Tables"]["nutrition_images"]["Row"][];
+  nutrition_images?: NutritionImageWithUrl[];
 };
 type TrainingSession = Database["public"]["Tables"]["training_sessions"]["Row"];
 
@@ -73,6 +79,7 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [viewingEntry, setViewingEntry] = useState<NutritionEntry | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
+  const [commentCounts, setCommentCounts] = useState<{ entries: Record<string, number>; sessions: Record<string, number> }>({ entries: {}, sessions: {} });
 
   // Use date-fns format to get local date string (avoids UTC timezone issues)
   const dateString = format(selectedDate, "yyyy-MM-dd");
@@ -98,8 +105,26 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
         const entriesData = await entriesRes.json();
         const sessionsData = await sessionsRes.json();
 
-        setEntries(entriesData.data || []);
-        setSessions(sessionsData.data || []);
+        const loadedEntries = entriesData.data || [];
+        const loadedSessions = sessionsData.data || [];
+
+        setEntries(loadedEntries);
+        setSessions(loadedSessions);
+
+        // Fetch comment counts for loaded entries and sessions
+        const entryIds = loadedEntries.map((e: NutritionEntry) => e.id);
+        const sessionIds = loadedSessions.map((s: TrainingSession) => s.id);
+
+        if (entryIds.length > 0 || sessionIds.length > 0) {
+          const countsRes = await fetch(
+            `/api/comments/counts?entry_ids=${entryIds.join(",")}&session_ids=${sessionIds.join(",")}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (countsRes.ok) {
+            const countsData = await countsRes.json();
+            setCommentCounts(countsData);
+          }
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -218,6 +243,12 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
                     {formatTime(entry.time)}
                   </span>
                 )}
+                {commentCounts.entries[entry.id] > 0 && (
+                  <span className="text-sm text-blue-500 flex items-center gap-1">
+                    <MessageSquare className="h-3 w-3" />
+                    {commentCounts.entries[entry.id]}
+                  </span>
+                )}
               </div>
               {entry.description && (
                 <p className="text-gray-600 mt-1 text-sm">{entry.description}</p>
@@ -226,7 +257,7 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
                 <div className="flex gap-2 mt-2">
                   {entry.nutrition_images.slice(0, 3).map((img) => (
                     <div key={img.id} className="relative w-16 h-16 rounded overflow-hidden">
-                      <Image src={img.image_url} alt="" fill className="object-cover" />
+                      <Image src={img.image_url} alt="" fill className="object-cover" unoptimized />
                     </div>
                   ))}
                   {entry.nutrition_images.length > 3 && (
@@ -288,6 +319,12 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
                   {session.duration_minutes && (
                     <span className="text-sm text-gray-500">
                       • {session.duration_minutes} min
+                    </span>
+                  )}
+                  {commentCounts.sessions[session.id] > 0 && (
+                    <span className="text-sm text-blue-500 flex items-center gap-1">
+                      <MessageSquare className="h-3 w-3" />
+                      {commentCounts.sessions[session.id]}
                     </span>
                   )}
                 </div>

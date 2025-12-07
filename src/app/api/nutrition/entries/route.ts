@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
 import { createNutritionEntrySchema } from "@/lib/validations/nutrition";
+import { addSignedUrlsToEntries } from "@/lib/storage/signed-urls";
 import { ZodError } from "zod";
 
 export async function GET(request: Request) {
@@ -39,7 +40,10 @@ export async function GET(request: Request) {
       return Response.json({ error: queryError.message }, { status: 500 });
     }
 
-    return Response.json({ data });
+    // Add signed URLs to images
+    const dataWithSignedUrls = await addSignedUrlsToEntries(supabase, data || []);
+
+    return Response.json({ data: dataWithSignedUrls });
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return Response.json({ error: error.message }, { status: 401 });

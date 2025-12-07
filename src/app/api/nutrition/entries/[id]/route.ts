@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database";
+import { addSignedUrlsToEntries } from "@/lib/storage/signed-urls";
 
 function createAuthenticatedClient(authToken: string) {
   return createClient<Database>(
@@ -58,7 +59,10 @@ export async function GET(
       return Response.json({ error: "Entry not found" }, { status: 404 });
     }
 
-    return Response.json({ data });
+    // Add signed URLs to images
+    const [dataWithSignedUrls] = await addSignedUrlsToEntries(supabase, [data]);
+
+    return Response.json({ data: dataWithSignedUrls });
   } catch {
     return Response.json(
       { error: "Internal server error" },

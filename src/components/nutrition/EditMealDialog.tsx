@@ -16,8 +16,13 @@ import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
 import { X, Upload, Loader2 } from "lucide-react";
 
+// Extended type that includes image_url from API response (signed URL)
+type NutritionImageWithUrl = Database["public"]["Tables"]["nutrition_images"]["Row"] & {
+  image_url: string;
+};
+
 type NutritionEntry = Database["public"]["Tables"]["nutrition_entries"]["Row"] & {
-  nutrition_images?: Database["public"]["Tables"]["nutrition_images"]["Row"][];
+  nutrition_images?: NutritionImageWithUrl[];
 };
 
 type MealType = "breakfast" | "mid-morning" | "lunch" | "afternoon-snack" | "dinner" | "extra";
@@ -192,6 +197,7 @@ export function EditMealDialog({ entry, open, onOpenChange, onSaved }: EditMealD
                     alt=""
                     fill
                     className="object-cover"
+                    unoptimized
                   />
                   <button
                     onClick={() => handleDeleteImage(img.id)}

@@ -7,8 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Extended type that includes image_url from API response (signed URL)
+type NutritionImageWithUrl = Database["public"]["Tables"]["nutrition_images"]["Row"] & {
+  image_url: string;
+};
+
 type NutritionEntry = Database["public"]["Tables"]["nutrition_entries"]["Row"] & {
-  nutrition_images?: Database["public"]["Tables"]["nutrition_images"]["Row"][];
+  nutrition_images?: NutritionImageWithUrl[];
 };
 
 const mealTypeLabels: Record<string, string> = {
@@ -130,6 +135,7 @@ export function NutritionEntriesList({
                       alt="Comida"
                       fill
                       className="object-cover rounded"
+                      unoptimized
                     />
                   </div>
                 ))}

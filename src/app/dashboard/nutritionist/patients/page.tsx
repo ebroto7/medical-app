@@ -39,7 +39,7 @@ export default function MyPatients() {
     try {
       const [patientsRes, requestsRes] = await Promise.all([
         fetch("/api/nutrition/my-patients"),
-        fetch("/api/nutrition/pending-requests"),
+        fetch("/api/nutrition/my-pending-requests"),
       ]);
 
       const patientsData = await patientsRes.json();
