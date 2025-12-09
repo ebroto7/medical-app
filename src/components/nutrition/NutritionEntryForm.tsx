@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { compressImage, formatFileSize, CompressionResult } from "@/lib/image-optimization";
@@ -56,7 +57,7 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-gray-600">
+          <p className="text-center text-muted-foreground">
             Por favor inicia sesión para crear entradas
           </p>
         </CardContent>
@@ -204,7 +205,7 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
             </div>
             <div>
               <label className="text-sm font-medium">
-                Hora <span className="text-gray-400 font-normal">- opcional</span>
+                Hora <span className="text-muted-foreground/70 font-normal">- opcional</span>
               </label>
               <Input
                 type="time"
@@ -216,17 +217,14 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
 
           <div>
             <label className="text-sm font-medium">Tipo de Comida</label>
-            <select
-              {...form.register("mealType")}
-              className="w-full mt-1 px-3 py-2 border rounded-md bg-white"
-            >
+            <Select {...form.register("mealType")} className="mt-1">
               <option value="breakfast">Desayuno</option>
               <option value="mid-morning">Media Mañana</option>
               <option value="lunch">Comida</option>
               <option value="afternoon-snack">Merienda</option>
               <option value="dinner">Cena</option>
               <option value="extra">Extra</option>
-            </select>
+            </Select>
           </div>
 
           <div>
@@ -240,7 +238,7 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
 
           <div>
             <label className="text-sm font-medium">
-              Imágenes <span className="text-gray-400 font-normal">({images.length}/{MAX_IMAGES})</span>
+              Imágenes <span className="text-muted-foreground/70 font-normal">({images.length}/{MAX_IMAGES})</span>
             </label>
             <Input
               type="file"
@@ -251,12 +249,12 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
               className="mt-1"
             />
             {images.length >= MAX_IMAGES && (
-              <p className="text-sm text-amber-600 mt-2">
+              <p className="text-sm text-warning-foreground mt-2">
                 Máximo de {MAX_IMAGES} fotos alcanzado
               </p>
             )}
             {isCompressing && (
-              <p className="text-sm text-blue-600 mt-2">
+              <p className="text-sm text-primary mt-2">
                 Optimizando imágenes para móvil...
               </p>
             )}
@@ -274,12 +272,12 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm"
                       >
                         ×
                       </button>
                       {compressionMetadata[index] && (
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {formatFileSize(compressionMetadata[index].originalSize)} →{" "}
                           {formatFileSize(compressionMetadata[index].compressedSize)}
                           <br />

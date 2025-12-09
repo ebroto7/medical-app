@@ -3,48 +3,106 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 217.2 32.6% 17.5%;
-  --card: 0 0% 100%;
-  --card-foreground: 217.2 32.6% 17.5%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 217.2 32.6% 17.5%;
-  --primary: 168 84% 39%;
+  /* Neo-Brutalism palette - Warm beige + vibrant accents */
+  --background: 40 25% 91%;
+  --foreground: 0 0% 5%;
+  --card: 40 25% 95%;
+  --card-foreground: 0 0% 5%;
+  --popover: 40 25% 95%;
+  --popover-foreground: 0 0% 5%;
+  --primary: 145 75% 42%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 217.2 32.6% 17.5%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 168 84% 39%;
+  --secondary: 40 20% 88%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 40 18% 85%;
+  --muted-foreground: 0 0% 35%;
+  --accent: 145 75% 42%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 168 84% 39%;
-  --radius: 0.5rem;
+  --destructive: 0 85% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 20% 82%;
+  --input: 40 20% 85%;
+  --ring: 145 75% 42%;
+  --radius: 1rem;
+
+  /* Accent colors for badges/icons - colores claros y brillantes */
+  --accent-orange: 25 95% 65%;
+  --accent-yellow: 50 95% 60%;
+  --accent-green: 145 75% 55%;
+  --accent-red: 0 85% 62%;
+  --accent-blue: 210 90% 62%;
+  --accent-purple: 270 70% 62%;
+
+  /* Badge backgrounds - colores sólidos sin transparencia */
+  --badge-orange: 30 80% 92%;
+  --badge-yellow: 48 80% 90%;
+  --badge-green: 150 50% 88%;
+  --badge-red: 0 70% 92%;
+  --badge-blue: 210 70% 92%;
+  --badge-purple: 270 50% 92%;
+
+  /* Indicator colors (for meal types, training types) */
+  --indicator-meal: 152 70% 45%;
+  --indicator-training: 35 95% 55%;
+  --indicator-extra: 270 70% 55%;
+
+  /* Status colors */
+  --success: 152 70% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 45 95% 55%;
+  --warning-foreground: 0 0% 10%;
+  --info: 210 90% 55%;
+  --info-foreground: 0 0% 100%;
+
+  /* Overlay */
+  --overlay: 0 0% 0%;
 }
 
 .dark {
-  --background: 217.2 32.6% 17.5%;
-  --foreground: 0 0% 98%;
-  --card: 217.2 32.6% 17.5%;
-  --card-foreground: 0 0% 98%;
-  --popover: 217.2 32.6% 17.5%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 168 84% 52%;
-  --primary-foreground: 217.2 32.6% 17.5%;
-  --secondary: 217.2 32.6% 22%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 217.2 32.6% 22%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 168 84% 52%;
-  --accent-foreground: 217.2 32.6% 17.5%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 22%;
-  --input: 217.2 32.6% 22%;
-  --ring: 168 84% 52%;
+  /* Dark mode - warm dark tones */
+  --background: 30 15% 10%;
+  --foreground: 40 20% 95%;
+  --card: 30 15% 14%;
+  --card-foreground: 40 20% 95%;
+  --popover: 30 15% 14%;
+  --popover-foreground: 40 20% 95%;
+  --primary: 152 70% 50%;
+  --primary-foreground: 0 0% 8%;
+  --secondary: 30 15% 20%;
+  --secondary-foreground: 40 20% 90%;
+  --muted: 30 15% 20%;
+  --muted-foreground: 40 10% 60%;
+  --accent: 152 70% 50%;
+  --accent-foreground: 0 0% 8%;
+  --destructive: 0 70% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 15% 22%;
+  --input: 30 15% 22%;
+  --ring: 152 70% 50%;
+
+  /* Accent colors for dark mode */
+  --accent-orange: 25 90% 50%;
+  --accent-yellow: 45 90% 50%;
+  --accent-green: 152 65% 45%;
+  --accent-red: 0 80% 50%;
+  --accent-blue: 210 85% 50%;
+  --accent-purple: 270 65% 50%;
+
+  /* Indicator colors (dark mode) */
+  --indicator-meal: 152 65% 45%;
+  --indicator-training: 35 90% 50%;
+  --indicator-extra: 270 65% 50%;
+
+  /* Status colors (dark mode) */
+  --success: 152 65% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 45 90% 50%;
+  --warning-foreground: 0 0% 10%;
+  --info: 210 85% 50%;
+  --info-foreground: 0 0% 100%;
+
+  /* Overlay */
+  --overlay: 0 0% 0%;
 }
 
 * {
@@ -53,6 +111,24 @@
 
 body {
   color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+
+/* Typography - Neo-Brutalism bold headers */
+h1 {
+  @apply text-5xl font-black tracking-tight;
+}
+
+h2 {
+  @apply text-3xl font-bold tracking-tight;
+}
+
+h3 {
+  @apply text-xl font-bold;
+}
+
+h4 {
+  @apply text-lg font-bold;
 }
 
 /* Global transitions */

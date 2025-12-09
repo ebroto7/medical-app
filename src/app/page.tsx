@@ -122,9 +122,15 @@ function FAQItem({
 }
 
 export default function Home() {
-  const { user, isLoading } = useAuth();
+  const { user, role, isLoading } = useAuth();
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  const getDashboardUrl = () => {
+    return role === "nutritionist"
+      ? "/dashboard/nutritionist/patients"
+      : "/dashboard/patient";
+  };
 
   // Mount effect
   useEffect(() => {
@@ -368,9 +374,15 @@ export default function Home() {
           </p>
 
           <div data-hero-cta className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
-              <a href="/auth/signup">Comenzar Ahora</a>
-            </Button>
+            {user ? (
+              <Button size="lg" asChild>
+                <a href={getDashboardUrl()}>Ir al Dashboard</a>
+              </Button>
+            ) : (
+              <Button size="lg" asChild>
+                <a href="/auth/signup">Comenzar Ahora</a>
+              </Button>
+            )}
             <Button size="lg" variant="outline" asChild>
               <a href="#features">Más Información</a>
             </Button>
@@ -451,13 +463,17 @@ export default function Home() {
       <section data-cta-section className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-12 text-center text-primary-foreground">
           <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-            ¿Listo para Transformar Tu Salud?
+            {user ? "¡Bienvenido de Nuevo!" : "¿Listo para Transformar Tu Salud?"}
           </h2>
           <p className="text-lg mb-8 opacity-90">
-            Únete a miles de usuarios que ya están mejorando su nutrición y salud con NutriDiary.
+            {user
+              ? "Continúa registrando tu progreso y mejorando tu salud día a día."
+              : "Únete a miles de usuarios que ya están mejorando su nutrición y salud con NutriDiary."}
           </p>
           <Button size="lg" variant="secondary" asChild>
-            <a href="/auth/signup">Crear Cuenta Gratis</a>
+            <a href={user ? getDashboardUrl() : "/auth/signup"}>
+              {user ? "Ir al Dashboard" : "Crear Cuenta Gratis"}
+            </a>
           </Button>
         </div>
       </section>

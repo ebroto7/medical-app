@@ -17,7 +17,7 @@ const views = [
 
 export function CalendarViewSelector({ currentView, onViewChange }: CalendarViewSelectorProps) {
   return (
-    <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
+    <div className="inline-flex rounded-full border-2 border-foreground/20 bg-background p-1 gap-1">
       {views.map((view) => {
         const Icon = view.icon;
         const isActive = currentView === view.value;
@@ -26,11 +26,11 @@ export function CalendarViewSelector({ currentView, onViewChange }: CalendarView
             key={view.value}
             onClick={() => onViewChange(view.value)}
             className={`
-              flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium
+              flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold
               transition-all duration-200
-              ${isActive 
-                ? "bg-white text-gray-900 shadow-sm" 
-                : "text-gray-600 hover:text-gray-900"
+              ${isActive
+                ? "bg-foreground text-background"
+                : "text-foreground/60 hover:text-foreground hover:bg-foreground/10"
               }
             `}
           >

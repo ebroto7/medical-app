@@ -48,6 +48,39 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Neo-Brutalism accent colors for badges
+        "accent-orange": "hsl(var(--accent-orange))",
+        "accent-yellow": "hsl(var(--accent-yellow))",
+        "accent-green": "hsl(var(--accent-green))",
+        "accent-red": "hsl(var(--accent-red))",
+        "accent-blue": "hsl(var(--accent-blue))",
+        "accent-purple": "hsl(var(--accent-purple))",
+        // Badge backgrounds - colores sólidos
+        "badge-orange": "hsl(var(--badge-orange))",
+        "badge-yellow": "hsl(var(--badge-yellow))",
+        "badge-green": "hsl(var(--badge-green))",
+        "badge-red": "hsl(var(--badge-red))",
+        "badge-blue": "hsl(var(--badge-blue))",
+        "badge-purple": "hsl(var(--badge-purple))",
+        // Indicator colors (for meal/training types)
+        "indicator-meal": "hsl(var(--indicator-meal))",
+        "indicator-training": "hsl(var(--indicator-training))",
+        "indicator-extra": "hsl(var(--indicator-extra))",
+        // Status colors
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        // Overlay
+        overlay: "hsl(var(--overlay))",
       },
       borderRadius: {
         lg: "var(--radius)",

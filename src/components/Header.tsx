@@ -2,9 +2,11 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Menu, X, LayoutDashboard, LogOut } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { href: "#features", label: "Features" },
@@ -14,6 +16,19 @@ const navLinks = [
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, role, signOut } = useAuth();
+  const router = useRouter();
+
+  const getDashboardUrl = () => {
+    return role === "nutritionist"
+      ? "/dashboard/nutritionist/patients"
+      : "/dashboard/patient";
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/auth/login");
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border transition-all duration-200">
@@ -41,16 +56,41 @@ export function Header() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            asChild
-          >
-            <Link href="/auth/login">Iniciar Sesión</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/auth/signup">Registrarse</Link>
-          </Button>
+          {user ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+              >
+                <Link href={getDashboardUrl()}>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Cerrar Sesión
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+              >
+                <Link href="/auth/login">Iniciar Sesión</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href="/auth/signup">Registrarse</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -77,21 +117,48 @@ export function Header() {
               </a>
             ))}
             <div className="pt-4 border-t border-border space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="w-full justify-center"
-              >
-                <Link href="/auth/login">Iniciar Sesión</Link>
-              </Button>
-              <Button
-                size="sm"
-                asChild
-                className="w-full justify-center"
-              >
-                <Link href="/auth/signup">Registrarse</Link>
-              </Button>
+              {user ? (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    asChild
+                    className="w-full justify-center"
+                  >
+                    <Link href={getDashboardUrl()}>
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Ir al Dashboard
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="w-full justify-center"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Cerrar Sesión
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="w-full justify-center"
+                  >
+                    <Link href="/auth/login">Iniciar Sesión</Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    asChild
+                    className="w-full justify-center"
+                  >
+                    <Link href="/auth/signup">Registrarse</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
