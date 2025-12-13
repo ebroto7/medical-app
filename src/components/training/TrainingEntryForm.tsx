@@ -9,16 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dumbbell, Heart, Zap, Activity, Sparkles, MoreHorizontal } from "lucide-react";
-
-const trainingTypes = [
-  { value: "cardio", label: "Cardio", icon: Heart, color: "bg-red-100 text-red-700 border-red-300" },
-  { value: "strength", label: "Fuerza", icon: Dumbbell, color: "bg-blue-100 text-blue-700 border-blue-300" },
-  { value: "flexibility", label: "Flexibilidad", icon: Activity, color: "bg-purple-100 text-purple-700 border-purple-300" },
-  { value: "hiit", label: "HIIT", icon: Zap, color: "bg-orange-100 text-orange-700 border-orange-300" },
-  { value: "yoga", label: "Yoga", icon: Sparkles, color: "bg-green-100 text-green-700 border-green-300" },
-  { value: "other", label: "Otro", icon: MoreHorizontal, color: "bg-gray-100 text-gray-700 border-gray-300" },
-] as const;
+import { trainingTypes, TrainingType } from "@/lib/training-config";
+import { Dumbbell } from "lucide-react";
 
 const formSchema = z.object({
   date: z.string(),
@@ -64,7 +56,7 @@ export function TrainingEntryForm({ onSuccess }: TrainingEntryFormProps) {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-gray-600">
+          <p className="text-center text-muted-foreground">
             Por favor inicia sesión para registrar entrenamientos
           </p>
         </CardContent>
@@ -116,10 +108,10 @@ export function TrainingEntryForm({ onSuccess }: TrainingEntryFormProps) {
   };
 
   return (
-    <Card className="border-amber-200 bg-amber-50/30">
+    <Card className="border-indicator-training/30 bg-indicator-training/5">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Dumbbell className="h-5 w-5 text-amber-600" />
+          <Dumbbell className="h-5 w-5 text-indicator-training" />
           Nuevo Entrenamiento
         </CardTitle>
       </CardHeader>
@@ -156,13 +148,13 @@ export function TrainingEntryForm({ onSuccess }: TrainingEntryFormProps) {
                   <button
                     key={type.value}
                     type="button"
-                    onClick={() => form.setValue("type", type.value)}
+                    onClick={() => form.setValue("type", type.value as TrainingType)}
                     className={`
                       flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
                       border transition-all duration-200
-                      ${isSelected 
-                        ? `${type.color} ring-2 ring-offset-1 ring-current` 
-                        : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                      ${isSelected
+                        ? `${type.colorClasses} ring-2 ring-offset-1 ring-current`
+                        : "bg-card text-muted-foreground border-border hover:border-muted-foreground"
                       }
                     `}
                   >
@@ -177,7 +169,7 @@ export function TrainingEntryForm({ onSuccess }: TrainingEntryFormProps) {
           {/* Duration */}
           <div>
             <label className="text-sm font-medium">
-              Duración (minutos) <span className="text-gray-400 font-normal">- opcional</span>
+              Duración (minutos) <span className="text-muted-foreground/70 font-normal">- opcional</span>
             </label>
             <Input
               type="number"
@@ -199,16 +191,16 @@ export function TrainingEntryForm({ onSuccess }: TrainingEntryFormProps) {
               rows={3}
             />
             {form.formState.errors.description && (
-              <p className="text-sm text-red-500 mt-1">
+              <p className="text-sm text-destructive mt-1">
                 {form.formState.errors.description.message}
               </p>
             )}
           </div>
 
-          <Button 
-            type="submit" 
-            disabled={isLoading} 
-            className="w-full bg-amber-600 hover:bg-amber-700"
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-indicator-training hover:bg-indicator-training/90 text-foreground"
           >
             {isLoading ? "Guardando..." : "Guardar Entrenamiento"}
           </Button>

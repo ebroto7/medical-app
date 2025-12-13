@@ -33,8 +33,8 @@ export default function PatientDashboardPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Mi Diario</h1>
-            <p className="text-gray-600 mt-1">Registra tu alimentación y entrenamientos</p>
+            <h1 className="text-3xl font-bold text-foreground">Mi Diario</h1>
+            <p className="text-muted-foreground mt-1">Registra tu alimentación y entrenamientos</p>
           </div>
           <CalendarViewSelector 
             currentView={calendarView} 
@@ -45,7 +45,7 @@ export default function PatientDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Forms */}
           <div className="lg:col-span-1 space-y-4">
-            <Card className="p-4 bg-white/80 backdrop-blur-sm">
+            <Card className="p-4 bg-card/80 backdrop-blur-sm">
               <Tabs value={activeFormTab} onValueChange={(v) => setActiveFormTab(v as "meal" | "training")}>
                 <TabsList className="grid w-full grid-cols-2 mb-4">
                   <TabsTrigger value="meal" className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export default function PatientDashboardPage() {
 
           {/* Right Column - Calendar View */}
           <div className="lg:col-span-2">
-            <Card className="p-4 sm:p-6 bg-white/80 backdrop-blur-sm">
+            <Card className="p-4 sm:p-6 bg-card/80 backdrop-blur-sm">
               {calendarView === "day" && (
                 <DayView
                   key={refreshKey}

@@ -30,64 +30,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check current session and fetch role
+    // Note: Middleware handles token refresh, so we can trust getSession() here
     const checkAuth = async () => {
       try {
-        // Graceful timeout - resolves with null instead of throwing error
-        // If timeout occurs, clears potentially stale/corrupted session cookies
-        const timeoutPromise = new Promise((resolve) =>
-          setTimeout(() => {
-            console.warn("Auth timeout - clearing potentially stale session");
-            supabase.auth.signOut().catch(() => {}); // Clear corrupted cookies
-            resolve({ data: { session: null } });
-          }, 10000)
-        );
-
-        const sessionPromise = supabase.auth.getSession();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sessionResult: any = await Promise.race([
-          sessionPromise,
-          timeoutPromise,
-        ]);
-
-        const session = sessionResult?.data?.session;
+        const { data: { session } } = await supabase.auth.getSession();
 
         setUser(session?.user || null);
         setToken(session?.access_token || null);
 
-        // Fetch user role from profiles table with timeout
+        // Fetch user role from profiles table
         if (session?.user) {
-          try {
-            const roleTimeout = new Promise((resolve) =>
-              setTimeout(() => {
-                console.warn("Role fetch timeout - continuing without role");
-                resolve({ data: null });
-              }, 8000)
-            );
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-            const profilePromise = supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const profileResult: any = await Promise.race([
-              profilePromise,
-              roleTimeout,
-            ]);
-
-            const profile = profileResult.data;
-
-            setRole(profile?.role || null);
-          } catch (roleError) {
-            console.warn("Could not fetch role:", roleError);
-            setRole(null);
-          }
+          setRole(profile?.role || null);
+        } else {
+          setRole(null);
         }
       } catch (error) {
         console.error("Auth check error:", error);
-        // Try to clear potentially corrupted session
-        supabase.auth.signOut().catch(() => {});
+        // Don't sign out on error - let middleware handle session issues
         setUser(null);
         setToken(null);
         setRole(null);

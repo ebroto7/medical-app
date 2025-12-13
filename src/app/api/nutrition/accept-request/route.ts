@@ -1,23 +1,26 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
+import { z } from "zod";
+import { ZodError } from "zod";
+
+const acceptRequestSchema = z.object({
+  requestId: z.string().uuid("Invalid request ID"),
+});
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { requestId } = body;
-
-    if (!requestId) {
-      return Response.json({ error: "Request ID required" }, { status: 400 });
-    }
-
     // 1. Require authentication
     const user = await requireAuth();
 
     // 2. Require patient role
     await requireRole(user.id, ["patient"]);
 
-    // 3. Verify request belongs to this patient
+    // 3. Validate body
+    const body = await request.json();
+    const { requestId } = acceptRequestSchema.parse(body);
+
+    // 4. Verify request belongs to this patient
     const supabase = await createClient();
     const { data: requestData } = await supabase
       .from("nutritionist_requests")
@@ -65,6 +68,12 @@ export async function POST(request: Request) {
     }
     if (error instanceof RoleError) {
       return Response.json({ error: "Access denied: patient role required" }, { status: 403 });
+    }
+    if (error instanceof ZodError) {
+      return Response.json(
+        { error: "Validation error", details: error.issues },
+        { status: 400 }
+      );
     }
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }

@@ -32,7 +32,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
         <Card>
           <CardHeader>
@@ -41,7 +41,7 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+                <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded">
                   {error}
                 </div>
               )}
@@ -76,12 +76,12 @@ export default function LoginPage() {
 
 
 
-              <p className="text-center text-sm text-gray-600">
+              <p className="text-center text-sm text-muted-foreground">
                 ¿No tienes cuenta?{" "}
                 <button
                   type="button"
                   onClick={() => router.push("/auth/signup")}
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   Regístrate aquí
                 </button>

@@ -6,18 +6,18 @@ import { LogIn } from "lucide-react";
 
 export default function Unauthorized() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         <div className="mb-8 flex justify-center">
-          <div className="p-4 bg-blue-100 rounded-full">
-            <LogIn className="text-blue-600" size={40} />
+          <div className="p-4 bg-primary/10 rounded-full">
+            <LogIn className="text-primary" size={40} />
           </div>
         </div>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Autenticación Requerida</h1>
-        <p className="text-xl text-gray-600 mb-4">401</p>
+        <h1 className="text-4xl font-bold text-foreground mb-2">Autenticación Requerida</h1>
+        <p className="text-xl text-muted-foreground mb-4">401</p>
 
-        <p className="text-gray-600 mb-8">
+        <p className="text-muted-foreground mb-8">
           Necesitas iniciar sesión para acceder a esta página. Por favor, inicia sesión
           con tu cuenta o crea una nueva si no tienes una.
         </p>
@@ -33,7 +33,7 @@ export default function Unauthorized() {
           </Link>
         </div>
 
-        <Link href="/" className="text-sm text-blue-600 hover:underline block mt-6">
+        <Link href="/" className="text-sm text-primary hover:underline block mt-6">
           Volver a Inicio
         </Link>
       </div>

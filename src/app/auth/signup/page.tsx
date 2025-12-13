@@ -65,7 +65,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
         <Card>
           <CardHeader>
@@ -74,13 +74,13 @@ export default function SignupPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+                <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded">
                   {error}
                 </div>
               )}
 
               {success && (
-                <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded">
+                <div className="p-3 bg-success/10 border border-success/20 text-success rounded">
                   {success}
                 </div>
               )}
@@ -100,32 +100,32 @@ export default function SignupPage() {
               <div>
                 <label className="text-sm font-medium mb-3 block">¿Cuál es tu rol?</label>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50">
+                  <label className="flex items-center gap-3 p-3 border border-input rounded-lg cursor-pointer hover:bg-primary/5">
                     <input
                       type="radio"
                       name="role"
                       value="patient"
                       checked={role === "patient"}
                       onChange={(e) => setRole(e.target.value as "patient" | "nutritionist")}
-                      className="w-4 h-4"
+                      className="w-4 h-4 accent-primary"
                     />
                     <div>
                       <span className="font-medium block">Soy Paciente</span>
-                      <span className="text-xs text-gray-500">Registra tu diario nutricional</span>
+                      <span className="text-xs text-muted-foreground">Registra tu diario nutricional</span>
                     </div>
                   </label>
-                  <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50">
+                  <label className="flex items-center gap-3 p-3 border border-input rounded-lg cursor-pointer hover:bg-primary/5">
                     <input
                       type="radio"
                       name="role"
                       value="nutritionist"
                       checked={role === "nutritionist"}
                       onChange={(e) => setRole(e.target.value as "patient" | "nutritionist")}
-                      className="w-4 h-4"
+                      className="w-4 h-4 accent-primary"
                     />
                     <div>
                       <span className="font-medium block">Soy Nutricionista</span>
-                      <span className="text-xs text-gray-500">Atiende a tus pacientes</span>
+                      <span className="text-xs text-muted-foreground">Atiende a tus pacientes</span>
                     </div>
                   </label>
                 </div>
@@ -173,12 +173,12 @@ export default function SignupPage() {
 
 
 
-              <p className="text-center text-sm text-gray-600">
+              <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tienes cuenta?{" "}
                 <button
                   type="button"
                   onClick={() => router.push("/auth/login")}
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   Inicia sesión aquí
                 </button>

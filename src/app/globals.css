@@ -3,102 +3,138 @@
 @tailwind utilities;
 
 :root {
-  /* Neo-Brutalism palette - Warm beige + vibrant accents */
-  --background: 40 25% 91%;
-  --foreground: 0 0% 5%;
-  --card: 40 25% 95%;
-  --card-foreground: 0 0% 5%;
-  --popover: 40 25% 95%;
-  --popover-foreground: 0 0% 5%;
-  --primary: 145 75% 42%;
+  /* Neo-Brutalism palette - Warm sand base */
+  --background: 33 37% 89%;
+  --foreground: 0 3% 15%;
+
+  /* Cards - ligeramente más claras que el fondo */
+  --card: 33 35% 94%;
+  --card-foreground: 0 3% 15%;
+  --popover: 33 35% 94%;
+  --popover-foreground: 0 3% 15%;
+
+  /* Primary - verde vibrante */
+  --primary: 152 70% 40%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 40 20% 88%;
-  --secondary-foreground: 0 0% 10%;
-  --muted: 40 18% 85%;
-  --muted-foreground: 0 0% 35%;
-  --accent: 145 75% 42%;
+
+  /* Secondary - tono arena más claro */
+  --secondary: 33 30% 85%;
+  --secondary-foreground: 0 3% 20%;
+
+  /* Muted - sutiles */
+  --muted: 33 25% 82%;
+  --muted-foreground: 0 3% 40%;
+
+  /* Accent - mismo que primary */
+  --accent: 152 70% 40%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 85% 55%;
+
+  /* Destructive */
+  --destructive: 0 75% 50%;
   --destructive-foreground: 0 0% 100%;
-  --border: 40 20% 82%;
-  --input: 40 20% 85%;
-  --ring: 145 75% 42%;
+
+  /* Borders & inputs - tonos arena */
+  --border: 33 25% 78%;
+  --input: 33 30% 85%;
+  --ring: 152 70% 40%;
   --radius: 1rem;
 
-  /* Accent colors for badges/icons - colores claros y brillantes */
-  --accent-orange: 25 95% 65%;
-  --accent-yellow: 50 95% 60%;
-  --accent-green: 145 75% 55%;
-  --accent-red: 0 85% 62%;
-  --accent-blue: 210 90% 62%;
-  --accent-purple: 270 70% 62%;
+  /* Accent colors for badges/icons - vibrantes con buen contraste */
+  --accent-orange: 25 90% 58%;
+  --accent-yellow: 45 95% 55%;
+  --accent-green: 152 70% 45%;
+  --accent-red: 0 80% 55%;
+  --accent-blue: 210 85% 55%;
+  --accent-purple: 270 65% 58%;
 
-  /* Badge backgrounds - colores sólidos sin transparencia */
-  --badge-orange: 30 80% 92%;
-  --badge-yellow: 48 80% 90%;
-  --badge-green: 150 50% 88%;
-  --badge-red: 0 70% 92%;
-  --badge-blue: 210 70% 92%;
-  --badge-purple: 270 50% 92%;
+  /* Badge backgrounds - ya no se usan (usamos accent colors directamente) */
+  --badge-orange: 25 90% 58%;
+  --badge-yellow: 45 95% 55%;
+  --badge-green: 152 70% 45%;
+  --badge-red: 0 80% 55%;
+  --badge-blue: 210 85% 55%;
+  --badge-purple: 270 65% 58%;
 
   /* Indicator colors (for meal types, training types) */
-  --indicator-meal: 152 70% 45%;
-  --indicator-training: 35 95% 55%;
-  --indicator-extra: 270 70% 55%;
+  --indicator-meal: 152 70% 40%;
+  --indicator-training: 25 90% 55%;
+  --indicator-extra: 270 65% 55%;
 
   /* Status colors */
-  --success: 152 70% 45%;
+  --success: 152 70% 40%;
   --success-foreground: 0 0% 100%;
-  --warning: 45 95% 55%;
-  --warning-foreground: 0 0% 10%;
-  --info: 210 90% 55%;
+  --warning: 45 95% 50%;
+  --warning-foreground: 0 3% 15%;
+  --info: 210 85% 50%;
   --info-foreground: 0 0% 100%;
 
   /* Overlay */
-  --overlay: 0 0% 0%;
+  --overlay: 0 3% 10%;
 }
 
 .dark {
-  /* Dark mode - warm dark tones */
-  --background: 30 15% 10%;
-  --foreground: 40 20% 95%;
-  --card: 30 15% 14%;
-  --card-foreground: 40 20% 95%;
-  --popover: 30 15% 14%;
-  --popover-foreground: 40 20% 95%;
-  --primary: 152 70% 50%;
-  --primary-foreground: 0 0% 8%;
-  --secondary: 30 15% 20%;
-  --secondary-foreground: 40 20% 90%;
-  --muted: 30 15% 20%;
-  --muted-foreground: 40 10% 60%;
-  --accent: 152 70% 50%;
-  --accent-foreground: 0 0% 8%;
-  --destructive: 0 70% 45%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 30 15% 22%;
-  --input: 30 15% 22%;
-  --ring: 152 70% 50%;
+  /* Dark mode - warm dark tones basados en el mismo hue 33 */
+  --background: 33 20% 10%;
+  --foreground: 33 20% 92%;
 
-  /* Accent colors for dark mode */
-  --accent-orange: 25 90% 50%;
+  /* Cards */
+  --card: 33 18% 14%;
+  --card-foreground: 33 20% 92%;
+  --popover: 33 18% 14%;
+  --popover-foreground: 33 20% 92%;
+
+  /* Primary */
+  --primary: 152 65% 45%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary */
+  --secondary: 33 15% 20%;
+  --secondary-foreground: 33 20% 88%;
+
+  /* Muted */
+  --muted: 33 12% 22%;
+  --muted-foreground: 33 15% 55%;
+
+  /* Accent */
+  --accent: 152 65% 45%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Destructive */
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Borders & inputs */
+  --border: 33 15% 22%;
+  --input: 33 15% 22%;
+  --ring: 152 65% 45%;
+
+  /* Accent colors for dark mode - ligeramente más saturados */
+  --accent-orange: 25 85% 52%;
   --accent-yellow: 45 90% 50%;
-  --accent-green: 152 65% 45%;
-  --accent-red: 0 80% 50%;
-  --accent-blue: 210 85% 50%;
-  --accent-purple: 270 65% 50%;
+  --accent-green: 152 60% 42%;
+  --accent-red: 0 75% 52%;
+  --accent-blue: 210 80% 52%;
+  --accent-purple: 270 60% 55%;
+
+  /* Badge backgrounds (same as accent) */
+  --badge-orange: 25 85% 52%;
+  --badge-yellow: 45 90% 50%;
+  --badge-green: 152 60% 42%;
+  --badge-red: 0 75% 52%;
+  --badge-blue: 210 80% 52%;
+  --badge-purple: 270 60% 55%;
 
   /* Indicator colors (dark mode) */
-  --indicator-meal: 152 65% 45%;
-  --indicator-training: 35 90% 50%;
-  --indicator-extra: 270 65% 50%;
+  --indicator-meal: 152 60% 42%;
+  --indicator-training: 25 85% 52%;
+  --indicator-extra: 270 60% 52%;
 
   /* Status colors (dark mode) */
-  --success: 152 65% 45%;
+  --success: 152 60% 42%;
   --success-foreground: 0 0% 100%;
-  --warning: 45 90% 50%;
+  --warning: 45 90% 48%;
   --warning-foreground: 0 0% 10%;
-  --info: 210 85% 50%;
+  --info: 210 80% 50%;
   --info-foreground: 0 0% 100%;
 
   /* Overlay */
@@ -112,23 +148,38 @@
 body {
   color: hsl(var(--foreground));
   background-color: hsl(var(--background));
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 /* Typography - Neo-Brutalism bold headers */
 h1 {
-  @apply text-5xl font-black tracking-tight;
+  @apply text-5xl font-black tracking-tight leading-none;
+  font-family: var(--font-display), system-ui, sans-serif;
 }
 
 h2 {
-  @apply text-3xl font-bold tracking-tight;
+  @apply text-3xl font-bold tracking-tight leading-tight;
+  font-family: var(--font-display), system-ui, sans-serif;
 }
 
 h3 {
-  @apply text-xl font-bold;
+  @apply text-xl font-bold leading-snug;
+  font-family: var(--font-display), system-ui, sans-serif;
 }
 
 h4 {
   @apply text-lg font-bold;
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* Mono text utility */
+.font-mono, code, pre {
+  font-family: var(--font-mono), monospace;
+}
+
+/* Logo text */
+.font-logo {
+  font-family: var(--font-logo), cursive;
 }
 
 /* Global transitions */

@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      meal_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          nutritionist_id: string
+          patient_id: string
+          type: Database["public"]["Enums"]["meal_plan_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          nutritionist_id: string
+          patient_id: string
+          type: Database["public"]["Enums"]["meal_plan_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          nutritionist_id?: string
+          patient_id?: string
+          type?: Database["public"]["Enums"]["meal_plan_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          read: boolean | null
+          reference_date: string | null
+          reference_id: string | null
+          reference_type: string | null
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          read?: boolean | null
+          reference_date?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          title: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          read?: boolean | null
+          reference_date?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       nutrition_entries: {
         Row: {
           created_at: string | null
@@ -72,6 +150,51 @@ export type Database = {
             columns: ["entry_id"]
             isOneToOne: false
             referencedRelation: "nutrition_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nutritionist_comments: {
+        Row: {
+          comment: string
+          created_at: string | null
+          entry_id: string | null
+          id: string
+          nutritionist_id: string
+          training_session_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          comment: string
+          created_at?: string | null
+          entry_id?: string | null
+          id?: string
+          nutritionist_id: string
+          training_session_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          comment?: string
+          created_at?: string | null
+          entry_id?: string | null
+          id?: string
+          nutritionist_id?: string
+          training_session_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutritionist_comments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "nutrition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nutritionist_comments_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -148,6 +271,88 @@ export type Database = {
         }
         Relationships: []
       }
+      situational_plan_slots: {
+        Row: {
+          calories: number | null
+          carbs: number | null
+          description: string | null
+          fat: number | null
+          id: string
+          meal_name: string
+          meal_type: Database["public"]["Enums"]["plan_meal_type"]
+          notes: string | null
+          protein: number | null
+          situational_plan_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          calories?: number | null
+          carbs?: number | null
+          description?: string | null
+          fat?: number | null
+          id?: string
+          meal_name: string
+          meal_type: Database["public"]["Enums"]["plan_meal_type"]
+          notes?: string | null
+          protein?: number | null
+          situational_plan_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          calories?: number | null
+          carbs?: number | null
+          description?: string | null
+          fat?: number | null
+          id?: string
+          meal_name?: string
+          meal_type?: Database["public"]["Enums"]["plan_meal_type"]
+          notes?: string | null
+          protein?: number | null
+          situational_plan_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "situational_plan_slots_situational_plan_id_fkey"
+            columns: ["situational_plan_id"]
+            isOneToOne: false
+            referencedRelation: "situational_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      situational_plans: {
+        Row: {
+          description: string | null
+          id: string
+          meal_plan_id: string
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          meal_plan_id: string
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          meal_plan_id?: string
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "situational_plans_meal_plan_id_fkey"
+            columns: ["meal_plan_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_sessions: {
         Row: {
           created_at: string | null
@@ -184,49 +389,57 @@ export type Database = {
         }
         Relationships: []
       }
-      nutritionist_comments: {
+      weekly_plan_slots: {
         Row: {
+          calories: number | null
+          carbs: number | null
+          day_of_week: number
+          description: string | null
+          fat: number | null
           id: string
-          nutritionist_id: string
-          entry_id: string | null
-          training_session_id: string | null
-          comment: string
-          created_at: string | null
-          updated_at: string | null
+          meal_name: string
+          meal_plan_id: string
+          meal_type: Database["public"]["Enums"]["plan_meal_type"]
+          notes: string | null
+          protein: number | null
+          sort_order: number | null
         }
         Insert: {
+          calories?: number | null
+          carbs?: number | null
+          day_of_week: number
+          description?: string | null
+          fat?: number | null
           id?: string
-          nutritionist_id: string
-          entry_id?: string | null
-          training_session_id?: string | null
-          comment: string
-          created_at?: string | null
-          updated_at?: string | null
+          meal_name: string
+          meal_plan_id: string
+          meal_type: Database["public"]["Enums"]["plan_meal_type"]
+          notes?: string | null
+          protein?: number | null
+          sort_order?: number | null
         }
         Update: {
+          calories?: number | null
+          carbs?: number | null
+          day_of_week?: number
+          description?: string | null
+          fat?: number | null
           id?: string
-          nutritionist_id?: string
-          entry_id?: string | null
-          training_session_id?: string | null
-          comment?: string
-          created_at?: string | null
-          updated_at?: string | null
+          meal_name?: string
+          meal_plan_id?: string
+          meal_type?: Database["public"]["Enums"]["plan_meal_type"]
+          notes?: string | null
+          protein?: number | null
+          sort_order?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "nutritionist_comments_entry_id_fkey"
-            columns: ["entry_id"]
+            foreignKeyName: "weekly_plan_slots_meal_plan_id_fkey"
+            columns: ["meal_plan_id"]
             isOneToOne: false
-            referencedRelation: "nutrition_entries"
+            referencedRelation: "meal_plans"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "nutritionist_comments_training_session_id_fkey"
-            columns: ["training_session_id"]
-            isOneToOne: false
-            referencedRelation: "training_sessions"
-            referencedColumns: ["id"]
-          }
         ]
       }
     }
@@ -244,11 +457,19 @@ export type Database = {
       }
     }
     Enums: {
+      meal_plan_type: "weekly" | "situational"
       meal_type:
         | "breakfast"
         | "mid-morning"
         | "lunch"
         | "afternoon-snack"
+        | "dinner"
+        | "extra"
+      plan_meal_type:
+        | "breakfast"
+        | "mid_morning"
+        | "lunch"
+        | "afternoon_snack"
         | "dinner"
         | "extra"
       training_type:
@@ -385,11 +606,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      meal_plan_type: ["weekly", "situational"],
       meal_type: [
         "breakfast",
         "mid-morning",
         "lunch",
         "afternoon-snack",
+        "dinner",
+        "extra",
+      ],
+      plan_meal_type: [
+        "breakfast",
+        "mid_morning",
+        "lunch",
+        "afternoon_snack",
         "dinner",
         "extra",
       ],

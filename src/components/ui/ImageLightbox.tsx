@@ -38,14 +38,14 @@ export function ImageLightbox({ images, currentIndex, onClose, onNavigate }: Ima
 
   // Use portal to render outside of any stacking context (like dialogs)
   return createPortal(
-    <div 
-      className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
+    <div
+      className="fixed inset-0 z-[100] bg-overlay/90 flex items-center justify-center"
       onClick={onClose}
     >
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full transition-colors z-10"
+        className="absolute top-4 right-4 p-2 text-primary-foreground hover:bg-primary-foreground/10 rounded-full transition-colors z-10"
       >
         <X className="h-8 w-8" />
       </button>
@@ -57,14 +57,14 @@ export function ImageLightbox({ images, currentIndex, onClose, onNavigate }: Ima
             e.stopPropagation();
             onNavigate(currentIndex - 1);
           }}
-          className="absolute left-4 p-2 text-white hover:bg-white/10 rounded-full transition-colors z-10"
+          className="absolute left-4 p-2 text-primary-foreground hover:bg-primary-foreground/10 rounded-full transition-colors z-10"
         >
           <ChevronLeft className="h-10 w-10" />
         </button>
       )}
 
       {/* Image */}
-      <div 
+      <div
         className="relative max-w-[90vw] max-h-[90vh] w-full h-full"
         onClick={(e) => e.stopPropagation()}
       >
@@ -86,7 +86,7 @@ export function ImageLightbox({ images, currentIndex, onClose, onNavigate }: Ima
             e.stopPropagation();
             onNavigate(currentIndex + 1);
           }}
-          className="absolute right-4 p-2 text-white hover:bg-white/10 rounded-full transition-colors z-10"
+          className="absolute right-4 p-2 text-primary-foreground hover:bg-primary-foreground/10 rounded-full transition-colors z-10"
         >
           <ChevronRight className="h-10 w-10" />
         </button>
@@ -94,7 +94,7 @@ export function ImageLightbox({ images, currentIndex, onClose, onNavigate }: Ima
 
       {/* Image counter */}
       {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-primary-foreground text-sm bg-overlay/50 px-3 py-1 rounded-full">
           {currentIndex + 1} / {images.length}
         </div>
       )}

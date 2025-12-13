@@ -14,21 +14,28 @@ NutriDiary utiliza un estilo **Neo-Brutalism moderno** caracterizado por:
 
 ## Paleta de Colores
 
-### Colores Base
+### Colores Base (Hue 33 - Arena cálida)
 ```css
---background: 40 25% 91%      /* Beige cálido */
---foreground: 0 0% 5%         /* Negro profundo */
---card: 40 25% 95%            /* Beige claro para cards */
+--background: 33 37% 89%      /* Arena cálida */
+--foreground: 0 3% 15%        /* Marrón oscuro suave */
+--card: 33 35% 94%            /* Arena clara para cards */
+--border: 33 25% 78%          /* Bordes arena */
+--muted: 33 25% 82%           /* Fondos sutiles */
+```
+
+### Color Primario
+```css
+--primary: 152 70% 40%        /* Verde esmeralda */
 ```
 
 ### Colores de Acento (para IconBadge)
 ```css
---accent-orange: 25 95% 65%   /* Naranja vibrante */
---accent-yellow: 50 95% 60%   /* Amarillo brillante */
---accent-green: 145 75% 55%   /* Verde fresco */
---accent-blue: 210 90% 62%    /* Azul claro */
---accent-red: 0 85% 62%       /* Rojo coral */
---accent-purple: 270 70% 62%  /* Púrpura suave */
+--accent-orange: 25 90% 58%   /* Naranja vibrante */
+--accent-yellow: 45 95% 55%   /* Amarillo brillante */
+--accent-green: 152 70% 45%   /* Verde fresco */
+--accent-blue: 210 85% 55%    /* Azul cielo */
+--accent-red: 0 80% 55%       /* Rojo coral */
+--accent-purple: 270 65% 58%  /* Púrpura suave */
 ```
 
 ---
@@ -117,15 +124,28 @@ NutriDiary utiliza un estilo **Neo-Brutalism moderno** caracterizado por:
 
 ## Tipografía
 
-Jerarquía con pesos bold para máxima legibilidad:
+### Fuentes (Google Fonts)
+| Uso | Fuente | Variable CSS | Clase Tailwind |
+|-----|--------|--------------|----------------|
+| **Logo** | Knewave | `--font-logo` | `font-logo` |
+| **Títulos** | Archivo Black | `--font-display` | `font-display` |
+| **Cuerpo** | Space Grotesk | `--font-body` | `font-body` |
+| **Código/Etiquetas** | IBM Plex Mono | `--font-mono` | `font-mono` |
 
-| Elemento | Tamaño | Peso |
-|----------|--------|------|
-| h1 | `text-5xl` | `font-black` |
-| h2 | `text-3xl` | `font-bold` |
-| h3 | `text-xl` | `font-bold` |
-| h4 | `text-lg` | `font-bold` |
-| body | `text-base` | `font-medium` |
+### Escala Neo-Brutalism
+| Elemento | Tamaño | Peso | Extra |
+|----------|--------|------|-------|
+| h1 | `text-5xl` | `font-black` | `tracking-tight leading-none` |
+| h2 | `text-3xl` | `font-bold` | `tracking-tight leading-tight` |
+| h3 | `text-xl` | `font-bold` | `leading-snug` |
+| h4 | `text-lg` | `font-bold` | - |
+| body | `text-base` | `font-medium` | `leading-relaxed` |
+| mono | `text-sm` | `font-mono` | - |
+
+### Uso del Logo
+```tsx
+<span className="font-logo text-xl">NutriDiary</span>
+```
 
 ---
 

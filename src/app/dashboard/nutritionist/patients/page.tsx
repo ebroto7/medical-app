@@ -100,12 +100,12 @@ export default function MyPatients() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mis Pacientes</h1>
-          <p className="text-gray-600 mt-2">Gestiona tus pacientes, solicitudes y búsqueda de nuevos pacientes</p>
+          <h1 className="text-3xl font-bold text-foreground">Mis Pacientes</h1>
+          <p className="text-muted-foreground mt-2">Gestiona tus pacientes, solicitudes y búsqueda de nuevos pacientes</p>
         </div>
 
         {/* Search New Patient */}
-        <Card className="bg-white/70 backdrop-blur-sm">
+        <Card className="bg-card/70 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-xl">Buscar Nuevo Paciente</CardTitle>
           </CardHeader>
@@ -122,7 +122,6 @@ export default function MyPatients() {
               <Button
                 onClick={handleSearch}
                 disabled={searchLoading}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 {searchLoading ? "Buscando..." : "Buscar"}
               </Button>
@@ -131,10 +130,10 @@ export default function MyPatients() {
               <div
                 className={`p-3 rounded text-sm ${
                   searchMessageType === "success"
-                    ? "bg-green-50 text-green-700"
+                    ? "bg-success/10 text-success"
                     : searchMessageType === "warning"
-                    ? "bg-yellow-50 text-yellow-700"
-                    : "bg-red-50 text-red-700"
+                    ? "bg-warning/10 text-warning-foreground"
+                    : "bg-destructive/10 text-destructive"
                 }`}
               >
                 {searchMessage}
@@ -145,7 +144,7 @@ export default function MyPatients() {
 
         {/* Pending Requests */}
         {!loading && pendingRequests.length > 0 && (
-          <Card className="bg-white/70 backdrop-blur-sm border-amber-200">
+          <Card className="bg-card/70 backdrop-blur-sm border-warning/30">
             <CardHeader>
               <CardTitle className="text-xl">Solicitudes Pendientes ({pendingRequests.length})</CardTitle>
             </CardHeader>
@@ -154,15 +153,15 @@ export default function MyPatients() {
                 {pendingRequests.map((request) => (
                   <div
                     key={request.id}
-                    className="flex justify-between items-center p-3 bg-amber-50 rounded-lg border border-amber-200"
+                    className="flex justify-between items-center p-3 bg-warning/10 rounded-lg border border-warning/30"
                   >
                     <div>
-                      <p className="font-medium text-gray-900">{request.patient?.full_name || "Paciente"}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="font-medium text-foreground">{request.patient?.full_name || "Paciente"}</p>
+                      <p className="text-xs text-muted-foreground">
                         Solicitado: {new Date(request.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                    <span className="text-xs font-medium text-warning-foreground bg-warning/20 px-2 py-1 rounded">
                       Pendiente
                     </span>
                   </div>
@@ -173,30 +172,30 @@ export default function MyPatients() {
         )}
 
         {/* Connected Patients */}
-        <Card className="bg-white/70 backdrop-blur-sm">
+        <Card className="bg-card/70 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-xl">Pacientes Conectados</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               </div>
             ) : patients.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No tienes pacientes conectados aún</p>
+              <p className="text-center text-muted-foreground py-8">No tienes pacientes conectados aún</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {patients.map((patient) => (
                   <button
                     key={patient.connectionId}
                     onClick={() => router.push(`/dashboard/nutritionist/patients/${patient.patient.id}`)}
-                    className="bg-white/70 backdrop-blur-sm rounded-lg shadow-sm p-6 hover:shadow-md hover:bg-white/80 transition-all text-left border border-gray-200"
+                    className="bg-card/70 backdrop-blur-sm rounded-lg shadow-sm p-6 hover:shadow-md hover:bg-card/90 transition-all text-left border border-border"
                   >
-                    <p className="font-medium text-gray-900 text-lg">{patient.patient.fullName}</p>
-                    <p className="text-sm text-gray-500 mt-2">
+                    <p className="font-medium text-foreground text-lg">{patient.patient.fullName}</p>
+                    <p className="text-sm text-muted-foreground mt-2">
                       Conectado: {new Date(patient.connectedAt).toLocaleDateString()}
                     </p>
-                    <p className="text-xs text-blue-600 mt-3">Ver diario →</p>
+                    <p className="text-xs text-primary mt-3">Ver diario →</p>
                   </button>
                 ))}
               </div>

@@ -14,6 +14,12 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "monospace"],
+        logo: ["var(--font-logo)", "cursive"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

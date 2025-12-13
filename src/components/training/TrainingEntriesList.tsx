@@ -5,18 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dumbbell, Heart, Zap, Activity, Sparkles, MoreHorizontal, Clock, Trash2 } from "lucide-react";
+import { trainingTypeRecord, TrainingType } from "@/lib/training-config";
+import { Dumbbell, Clock, Trash2 } from "lucide-react";
 
 type TrainingSession = Database["public"]["Tables"]["training_sessions"]["Row"];
-
-const trainingTypeConfig = {
-  cardio: { label: "Cardio", icon: Heart, color: "bg-red-100 text-red-700 border-red-200" },
-  strength: { label: "Fuerza", icon: Dumbbell, color: "bg-blue-100 text-blue-700 border-blue-200" },
-  flexibility: { label: "Flexibilidad", icon: Activity, color: "bg-purple-100 text-purple-700 border-purple-200" },
-  hiit: { label: "HIIT", icon: Zap, color: "bg-orange-100 text-orange-700 border-orange-200" },
-  yoga: { label: "Yoga", icon: Sparkles, color: "bg-green-100 text-green-700 border-green-200" },
-  other: { label: "Otro", icon: MoreHorizontal, color: "bg-gray-100 text-gray-700 border-gray-200" },
-} as const;
 
 interface TrainingEntriesListProps {
   userId: string;
@@ -101,7 +93,7 @@ export function TrainingEntriesList({
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-500">Cargando entrenamientos...</div>;
+    return <div className="text-center py-8 text-muted-foreground">Cargando entrenamientos...</div>;
   }
 
   if (sessions.length === 0) {
@@ -110,37 +102,37 @@ export function TrainingEntriesList({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-amber-700 flex items-center gap-2">
+      <h3 className="text-lg font-semibold text-indicator-training flex items-center gap-2">
         <Dumbbell className="h-5 w-5" />
         Entrenamientos ({sessions.length})
       </h3>
       {sessions.map((session) => {
-        const typeConfig = trainingTypeConfig[session.type];
+        const typeConfig = trainingTypeRecord[session.type as TrainingType];
         const Icon = typeConfig.icon;
-        
+
         return (
-          <Card key={session.id} className={`border ${typeConfig.color}`}>
+          <Card key={session.id} className={`border ${typeConfig.colorClasses}`}>
             <CardContent className="py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className={`p-2 rounded-lg ${typeConfig.color}`}>
+                  <div className={`p-2 rounded-lg ${typeConfig.badgeClasses}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold">{typeConfig.label}</span>
-                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                      <span className="text-sm text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {formatTime(session.time)}
                       </span>
                       {session.duration_minutes && (
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           • {formatDuration(session.duration_minutes)}
                         </span>
                       )}
                     </div>
                     {session.description && (
-                      <p className="text-gray-600 mt-1 text-sm">{session.description}</p>
+                      <p className="text-muted-foreground mt-1 text-sm">{session.description}</p>
                     )}
                   </div>
                 </div>
@@ -149,7 +141,7 @@ export function TrainingEntriesList({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(session.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

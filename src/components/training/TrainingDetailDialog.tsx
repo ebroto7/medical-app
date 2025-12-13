@@ -10,18 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Database } from "@/types/database";
+import { trainingTypeRecord, TrainingType } from "@/lib/training-config";
 import {
   Clock,
   MessageSquare,
   Send,
   Loader2,
   Timer,
-  Dumbbell,
-  Heart,
-  Zap,
-  Activity,
-  Sparkles,
-  MoreHorizontal,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -31,15 +26,6 @@ type TrainingSession = Database["public"]["Tables"]["training_sessions"]["Row"];
 type NutritionistComment = Database["public"]["Tables"]["nutritionist_comments"]["Row"] & {
   nutritionist?: { full_name: string | null };
 };
-
-const trainingTypeConfig = {
-  cardio: { label: "Cardio", icon: Heart, color: "bg-red-100 text-red-700" },
-  strength: { label: "Fuerza", icon: Dumbbell, color: "bg-blue-100 text-blue-700" },
-  flexibility: { label: "Flexibilidad", icon: Activity, color: "bg-purple-100 text-purple-700" },
-  hiit: { label: "HIIT", icon: Zap, color: "bg-orange-100 text-orange-700" },
-  yoga: { label: "Yoga", icon: Sparkles, color: "bg-green-100 text-green-700" },
-  other: { label: "Otro", icon: MoreHorizontal, color: "bg-gray-100 text-gray-700" },
-} as const;
 
 interface TrainingDetailDialogProps {
   session: TrainingSession | null;
@@ -112,7 +98,7 @@ export function TrainingDetailDialog({
 
   if (!session) return null;
 
-  const config = trainingTypeConfig[session.type];
+  const config = trainingTypeRecord[session.type as TrainingType];
   const Icon = config.icon;
 
   return (
@@ -120,12 +106,12 @@ export function TrainingDetailDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${config.color}`}>
+            <div className={`p-2 rounded-lg ${config.badgeClasses}`}>
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-amber-900">{config.label}</span>
-              <div className="text-sm font-normal text-gray-500 flex items-center gap-2 mt-1">
+              <span className="text-indicator-training">{config.label}</span>
+              <div className="text-sm font-normal text-muted-foreground flex items-center gap-2 mt-1">
                 {format(new Date(session.date), "EEEE, d 'de' MMMM", { locale: es })}
                 {session.time && (
                   <>
@@ -142,8 +128,8 @@ export function TrainingDetailDialog({
         <div className="space-y-6 mt-4">
           {/* Duration */}
           {session.duration_minutes && (
-            <div className="flex items-center gap-2 text-gray-700">
-              <Timer className="h-4 w-4 text-amber-600" />
+            <div className="flex items-center gap-2 text-foreground">
+              <Timer className="h-4 w-4 text-indicator-training" />
               <span className="font-medium">{session.duration_minutes} minutos</span>
             </div>
           )}
@@ -151,24 +137,24 @@ export function TrainingDetailDialog({
           {/* Description */}
           {session.description && (
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Descripción</h4>
-              <p className="text-gray-600 whitespace-pre-wrap">{session.description}</p>
+              <h4 className="text-sm font-medium text-foreground mb-2">Descripción</h4>
+              <p className="text-muted-foreground whitespace-pre-wrap">{session.description}</p>
             </div>
           )}
 
           {/* Comments Section */}
-          <div className="border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+          <div className="border-t border-border pt-4">
+            <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               Comentarios del nutricionista
             </h4>
 
             {isLoadingComments ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : comments.length === 0 ? (
-              <p className="text-gray-500 text-sm italic">
+              <p className="text-muted-foreground text-sm italic">
                 {isNutritionist
                   ? "No hay comentarios. Añade uno abajo."
                   : "No hay comentarios del nutricionista."}
@@ -178,12 +164,12 @@ export function TrainingDetailDialog({
                 {comments.map((comment) => (
                   <div
                     key={comment.id}
-                    className="bg-blue-50 border border-blue-100 rounded-lg p-3"
+                    className="bg-info/10 border border-info/20 rounded-lg p-3"
                   >
-                    <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                    <p className="text-foreground text-sm whitespace-pre-wrap">
                       {comment.comment}
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       {comment.nutritionist?.full_name || "Nutricionista"} •{" "}
                       {comment.created_at &&
                         format(new Date(comment.created_at), "d MMM yyyy, HH:mm", {

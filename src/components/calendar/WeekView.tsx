@@ -96,7 +96,7 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p className="text-gray-500 mt-2">Cargando...</p>
+        <p className="text-muted-foreground mt-2">Cargando...</p>
       </div>
     );
   }
@@ -108,7 +108,7 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
         <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-lg font-bold text-gray-900">
+        <h2 className="text-lg font-bold text-foreground">
           {format(weekStart, "d MMM", { locale: es })} - {format(weekEnd, "d MMM yyyy", { locale: es })}
         </h2>
         <Button variant="outline" size="sm" onClick={goToNextWeek}>
@@ -124,35 +124,35 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
             onClick={() => onDayClick(day.date)}
             className={`
               p-3 rounded-lg text-center transition-all
-              ${isSelected(day.date) 
-                ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2" 
+              ${isSelected(day.date)
+                ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2"
                 : isToday(day.date)
-                  ? "bg-blue-100 hover:bg-blue-200"
-                  : "bg-white hover:bg-gray-50 border border-gray-200"
+                  ? "bg-primary/10 hover:bg-primary/20"
+                  : "bg-card hover:bg-muted/50 border border-border"
               }
             `}
           >
             <div className="text-xs font-medium uppercase opacity-70">
               {format(day.date, "EEE", { locale: es })}
             </div>
-            <div className={`text-2xl font-bold ${isSelected(day.date) ? "" : "text-gray-900"}`}>
+            <div className={`text-2xl font-bold ${isSelected(day.date) ? "" : "text-foreground"}`}>
               {format(day.date, "d")}
             </div>
-            
+
             {/* Indicators */}
             <div className="flex justify-center gap-1.5 mt-2">
               {day.meals > 0 && (
                 <div className="flex items-center gap-0.5 text-xs">
-                  <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                  <span className={isSelected(day.date) ? "text-primary-foreground/80" : "text-gray-500"}>
+                  <div className="w-2 h-2 rounded-full bg-indicator-meal"></div>
+                  <span className={isSelected(day.date) ? "text-primary-foreground/80" : "text-muted-foreground"}>
                     {day.meals}
                   </span>
                 </div>
               )}
               {day.trainings > 0 && (
                 <div className="flex items-center gap-0.5 text-xs">
-                  <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                  <span className={isSelected(day.date) ? "text-primary-foreground/80" : "text-gray-500"}>
+                  <div className="w-2 h-2 rounded-full bg-indicator-training"></div>
+                  <span className={isSelected(day.date) ? "text-primary-foreground/80" : "text-muted-foreground"}>
                     {day.trainings}
                   </span>
                 </div>
@@ -167,13 +167,13 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
       </div>
 
       {/* Legend */}
-      <div className="flex justify-center gap-4 text-sm text-gray-500">
+      <div className="flex justify-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-teal-500"></div>
+          <div className="w-3 h-3 rounded-full bg-indicator-meal"></div>
           <span>Comidas</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+          <div className="w-3 h-3 rounded-full bg-indicator-training"></div>
           <span>Entrenamientos</span>
         </div>
       </div>

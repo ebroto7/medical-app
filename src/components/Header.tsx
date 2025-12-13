@@ -36,7 +36,7 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
           <Logo size="md" className="group-hover:text-primary transition-colors" />
-          <span className="font-bold text-lg text-foreground hidden sm:inline group-hover:text-primary transition-colors">
+          <span className="font-logo text-2xl text-foreground hidden sm:inline group-hover:text-primary transition-colors">
             NutriDiary
           </span>
         </Link>

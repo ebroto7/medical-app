@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  format, 
-  isSameDay, 
+import {
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  format,
+  isSameDay,
   isSameMonth,
-  addMonths, 
+  addMonths,
   subMonths,
   startOfWeek,
   endOfWeek,
@@ -43,7 +43,7 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  
+
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
@@ -69,7 +69,7 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
         const sessions: TrainingSession[] = sessionsData.data || [];
 
         const indicatorMap: DayIndicators = {};
-        
+
         entries.forEach((e) => {
           if (!indicatorMap[e.date]) {
             indicatorMap[e.date] = { meals: 0, trainings: 0, hasExtra: false };
@@ -111,7 +111,7 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-bold text-gray-900 capitalize">
+          <h2 className="text-xl font-bold text-foreground capitalize">
             {format(currentMonth, "MMMM yyyy", { locale: es })}
           </h2>
           <Button variant="ghost" size="sm" onClick={goToToday} className="text-xs">
@@ -124,11 +124,11 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden relative">
+      <div className="bg-card rounded-lg border border-border overflow-hidden relative">
         {/* Week day headers */}
-        <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+        <div className="grid grid-cols-7 bg-muted border-b border-border">
           {weekDays.map((day) => (
-            <div key={day} className="py-2 text-center text-xs font-medium text-gray-500 uppercase">
+            <div key={day} className="py-2 text-center text-xs font-medium text-muted-foreground uppercase">
               {day}
             </div>
           ))}
@@ -148,16 +148,16 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
                 key={day.toISOString()}
                 onClick={() => onDateChange(day)}
                 className={`
-                  relative h-14 p-1 border-b border-r border-gray-100
+                  relative h-14 p-1 border-b border-r border-border/50
                   transition-colors
-                  ${!isCurrentMonth ? "bg-gray-50" : "bg-white hover:bg-gray-50"}
+                  ${!isCurrentMonth ? "bg-muted/50" : "bg-card hover:bg-muted/50"}
                   ${isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : ""}
                   ${index % 7 === 6 ? "border-r-0" : ""}
                 `}
               >
                 <div className={`
                   text-sm font-medium
-                  ${!isCurrentMonth ? "text-gray-300" : "text-gray-900"}
+                  ${!isCurrentMonth ? "text-muted-foreground/50" : "text-foreground"}
                   ${isToday ? "bg-primary text-primary-foreground w-7 h-7 rounded-full flex items-center justify-center mx-auto" : ""}
                   ${isSelected && !isToday ? "text-primary font-bold" : ""}
                 `}>
@@ -168,13 +168,13 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
                 {dayIndicator && isCurrentMonth && (
                   <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                     {dayIndicator.meals > 0 && !dayIndicator.hasExtra && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-indicator-meal"></div>
                     )}
                     {dayIndicator.hasExtra && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-indicator-extra"></div>
                     )}
                     {dayIndicator.trainings > 0 && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-indicator-training"></div>
                     )}
                   </div>
                 )}
@@ -184,24 +184,24 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
         </div>
 
         {isLoading && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-card/50 flex items-center justify-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
         )}
       </div>
 
       {/* Legend */}
-      <div className="flex justify-center gap-4 text-sm text-gray-500">
+      <div className="flex justify-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-teal-500"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-indicator-meal"></div>
           <span>Comidas</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-violet-500"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-indicator-extra"></div>
           <span>Extra</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-indicator-training"></div>
           <span>Entreno</span>
         </div>
       </div>

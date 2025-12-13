@@ -11,8 +11,8 @@ export default function ProfilePage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-          <p className="text-gray-600 mt-2">Información de tu cuenta</p>
+          <h1 className="text-3xl font-bold text-foreground">Mi Perfil</h1>
+          <p className="text-muted-foreground mt-2">Información de tu cuenta</p>
         </div>
 
         <Card>
@@ -21,20 +21,20 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-600">Email</label>
-              <p className="text-gray-900 mt-1">{user?.email || "No disponible"}</p>
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <p className="text-foreground mt-1">{user?.email || "No disponible"}</p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-600">Rol</label>
-              <p className="text-gray-900 mt-1 capitalize">
+              <label className="text-sm font-medium text-muted-foreground">Rol</label>
+              <p className="text-foreground mt-1 capitalize">
                 {role === "nutritionist" ? "Nutricionista" : "Paciente"}
               </p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-600">ID de Usuario</label>
-              <p className="text-gray-900 mt-1 text-sm font-mono">{user?.id || "No disponible"}</p>
+              <label className="text-sm font-medium text-muted-foreground">ID de Usuario</label>
+              <p className="text-foreground mt-1 text-sm font-mono">{user?.id || "No disponible"}</p>
             </div>
           </CardContent>
         </Card>

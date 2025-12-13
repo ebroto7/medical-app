@@ -114,8 +114,8 @@ export function EntryDetailDialog({
   const images = entry.nutrition_images || [];
   const isExtra = entry.meal_type === "extra";
   const colorScheme = isExtra
-    ? { bg: "bg-violet-100", text: "text-violet-700", border: "border-violet-200" }
-    : { bg: "bg-teal-100", text: "text-teal-700", border: "border-teal-200" };
+    ? { bg: "bg-indicator-extra/20", text: "text-indicator-extra", textTitle: "text-indicator-extra" }
+    : { bg: "bg-indicator-meal/20", text: "text-indicator-meal", textTitle: "text-indicator-meal" };
 
   return (
     <>
@@ -127,10 +127,10 @@ export function EntryDetailDialog({
                 <Utensils className="h-5 w-5" />
               </div>
               <div>
-                <span className={isExtra ? "text-violet-900" : "text-teal-900"}>
+                <span className={colorScheme.textTitle}>
                   {mealTypeLabels[entry.meal_type]}
                 </span>
-                <div className="text-sm font-normal text-gray-500 flex items-center gap-2 mt-1">
+                <div className="text-sm font-normal text-muted-foreground flex items-center gap-2 mt-1">
                   {format(new Date(entry.date), "EEEE, d 'de' MMMM", { locale: es })}
                   {entry.time && (
                     <>
@@ -148,15 +148,15 @@ export function EntryDetailDialog({
             {/* Description */}
             {entry.description && (
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Descripción</h4>
-                <p className="text-gray-600 whitespace-pre-wrap">{entry.description}</p>
+                <h4 className="text-sm font-medium text-foreground mb-2">Descripción</h4>
+                <p className="text-muted-foreground whitespace-pre-wrap">{entry.description}</p>
               </div>
             )}
 
             {/* Images */}
             {images.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                <h4 className="text-sm font-medium text-foreground mb-2">
                   Fotos ({images.length})
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -181,18 +181,18 @@ export function EntryDetailDialog({
             )}
 
             {/* Comments Section */}
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <div className="border-t border-border pt-4">
+              <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 Comentarios del nutricionista
               </h4>
 
               {isLoadingComments ? (
                 <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : comments.length === 0 ? (
-                <p className="text-gray-500 text-sm italic">
+                <p className="text-muted-foreground text-sm italic">
                   {isNutritionist
                     ? "No hay comentarios. Añade uno abajo."
                     : "No hay comentarios del nutricionista."}
@@ -202,12 +202,12 @@ export function EntryDetailDialog({
                   {comments.map((comment) => (
                     <div
                       key={comment.id}
-                      className="bg-blue-50 border border-blue-100 rounded-lg p-3"
+                      className="bg-info/10 border border-info/20 rounded-lg p-3"
                     >
-                      <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                      <p className="text-foreground text-sm whitespace-pre-wrap">
                         {comment.comment}
                       </p>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         {comment.nutritionist?.full_name || "Nutricionista"} •{" "}
                         {comment.created_at &&
                           format(new Date(comment.created_at), "d MMM yyyy, HH:mm", {

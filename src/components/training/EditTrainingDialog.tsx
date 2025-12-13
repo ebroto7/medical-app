@@ -13,19 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Dumbbell, Heart, Zap, Activity, Sparkles, MoreHorizontal } from "lucide-react";
+import { trainingTypes, TrainingType } from "@/lib/training-config";
+import { Loader2 } from "lucide-react";
 
 type TrainingSession = Database["public"]["Tables"]["training_sessions"]["Row"];
-type TrainingType = "cardio" | "strength" | "flexibility" | "hiit" | "yoga" | "other";
-
-const trainingTypeOptions: { value: TrainingType; label: string; icon: React.ElementType }[] = [
-  { value: "cardio", label: "Cardio", icon: Heart },
-  { value: "strength", label: "Fuerza", icon: Dumbbell },
-  { value: "flexibility", label: "Flexibilidad", icon: Activity },
-  { value: "hiit", label: "HIIT", icon: Zap },
-  { value: "yoga", label: "Yoga", icon: Sparkles },
-  { value: "other", label: "Otro", icon: MoreHorizontal },
-];
 
 interface EditTrainingDialogProps {
   session: TrainingSession;
@@ -37,7 +28,7 @@ interface EditTrainingDialogProps {
 export function EditTrainingDialog({ session, open, onOpenChange, onSaved }: EditTrainingDialogProps) {
   const { token } = useAuth();
 
-  const [type, setType] = useState<TrainingType>(session.type);
+  const [type, setType] = useState<TrainingType>(session.type as TrainingType);
   const [time, setTime] = useState(session.time?.slice(0, 5) || "");
   const [durationMinutes, setDurationMinutes] = useState(session.duration_minutes?.toString() || "");
   const [description, setDescription] = useState(session.description || "");
@@ -86,11 +77,11 @@ export function EditTrainingDialog({ session, open, onOpenChange, onSaved }: Edi
         <div className="space-y-4">
           {/* Training Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Tipo de entrenamiento
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {trainingTypeOptions.map((opt) => {
+              {trainingTypes.map((opt) => {
                 const Icon = opt.icon;
                 const isSelected = type === opt.value;
                 return (
@@ -100,8 +91,8 @@ export function EditTrainingDialog({ session, open, onOpenChange, onSaved }: Edi
                     onClick={() => setType(opt.value)}
                     className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all ${
                       isSelected
-                        ? "border-amber-500 bg-amber-50 text-amber-700"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? `border-indicator-training bg-indicator-training/10 text-indicator-training`
+                        : "border-border hover:border-muted-foreground"
                     }`}
                   >
                     <Icon className="h-5 w-5" />
@@ -114,7 +105,7 @@ export function EditTrainingDialog({ session, open, onOpenChange, onSaved }: Edi
 
           {/* Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Hora *
             </label>
             <Input
@@ -127,7 +118,7 @@ export function EditTrainingDialog({ session, open, onOpenChange, onSaved }: Edi
 
           {/* Duration */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Duración (minutos)
             </label>
             <Input
@@ -142,7 +133,7 @@ export function EditTrainingDialog({ session, open, onOpenChange, onSaved }: Edi
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Comentario
             </label>
             <Textarea

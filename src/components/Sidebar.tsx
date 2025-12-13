@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, BookOpen, Users, Settings, LogOut, Bell } from "lucide-react";
+import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { IconBadge } from "@/components/ui/icon-badge";
@@ -66,6 +66,7 @@ export function Sidebar({ role }: SidebarProps) {
     } else {
       return [
         { label: "Mi Diario", icon: BookOpen, href: "/dashboard/patient", color: "green" as const },
+        { label: "Mis Pautas", icon: ClipboardList, href: "/dashboard/patient/meal-plans", color: "purple" as const },
         { label: "Nutricionistas", icon: Users, href: "/dashboard/patient/nutritionists", color: "blue" as const },
         { label: "Notificaciones", icon: Bell, href: "/dashboard/notifications", badge: unreadCount, color: "orange" as const },
         { label: "Perfil", icon: Settings, href: "/dashboard/profile", color: "muted" as const },
@@ -101,7 +102,7 @@ export function Sidebar({ role }: SidebarProps) {
           <div className="flex items-center justify-between mb-8 pb-4 border-b border-border">
             <Link href="/" className="flex items-center gap-3 group">
               <Logo size="md" className="group-hover:text-primary transition-colors" />
-              <span className="text-lg font-bold text-foreground hidden sm:inline group-hover:text-primary transition-colors">NutriDiary</span>
+              <span className="text-xl font-logo text-foreground hidden sm:inline group-hover:text-primary transition-colors">NutriDiary</span>
             </Link>
             {isMobile && (
               <button

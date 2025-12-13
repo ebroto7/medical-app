@@ -79,7 +79,7 @@ export function PatientWeekView({ patientId, selectedDate, onDateChange }: Patie
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        <p className="text-gray-500 mt-2">Cargando...</p>
+        <p className="text-muted-foreground mt-2">Cargando...</p>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export function PatientWeekView({ patientId, selectedDate, onDateChange }: Patie
         <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-xl font-bold text-gray-900">
+        <h2 className="text-xl font-bold text-foreground">
           {format(weekStart, "d MMM", { locale: es })} - {format(addDays(weekStart, 6), "d MMM yyyy", { locale: es })}
         </h2>
         <Button variant="outline" size="sm" onClick={goToNextWeek}>
@@ -112,14 +112,14 @@ export function PatientWeekView({ patientId, selectedDate, onDateChange }: Patie
               key={day.toISOString()}
               className={`p-3 cursor-pointer transition-all hover:shadow-md ${
                 isSelected ? "ring-2 ring-primary" : ""
-              } ${isToday ? "bg-blue-50" : ""}`}
+              } ${isToday ? "bg-primary/5" : ""}`}
               onClick={() => onDateChange(day)}
             >
               <div className="text-center mb-2">
-                <div className="text-xs text-gray-500 uppercase">
+                <div className="text-xs text-muted-foreground uppercase">
                   {format(day, "EEE", { locale: es })}
                 </div>
-                <div className={`text-lg font-bold ${isToday ? "text-blue-600" : ""}`}>
+                <div className={`text-lg font-bold ${isToday ? "text-primary" : ""}`}>
                   {format(day, "d")}
                 </div>
               </div>
@@ -130,8 +130,8 @@ export function PatientWeekView({ patientId, selectedDate, onDateChange }: Patie
                     key={entry.id}
                     className={`text-xs p-1 rounded truncate flex items-center gap-1 ${
                       (entry.meal_type as string) === "extra"
-                        ? "bg-violet-100 text-violet-700"
-                        : "bg-teal-100 text-teal-700"
+                        ? "bg-indicator-extra/20 text-indicator-extra"
+                        : "bg-indicator-meal/20 text-indicator-meal"
                     }`}
                   >
                     <Utensils className="h-3 w-3 flex-shrink-0" />
@@ -143,7 +143,7 @@ export function PatientWeekView({ patientId, selectedDate, onDateChange }: Patie
                 {daySessions.slice(0, 2).map((session) => (
                   <div
                     key={session.id}
-                    className="text-xs p-1 rounded bg-amber-100 text-amber-700 truncate flex items-center gap-1"
+                    className="text-xs p-1 rounded bg-indicator-training/20 text-indicator-training truncate flex items-center gap-1"
                   >
                     <Dumbbell className="h-3 w-3 flex-shrink-0" />
                     <span className="truncate">
@@ -152,7 +152,7 @@ export function PatientWeekView({ patientId, selectedDate, onDateChange }: Patie
                   </div>
                 ))}
                 {(dayEntries.length > 2 || daySessions.length > 2) && (
-                  <div className="text-xs text-gray-500 text-center">
+                  <div className="text-xs text-muted-foreground text-center">
                     +{Math.max(0, dayEntries.length - 2) + Math.max(0, daySessions.length - 2)} más
                   </div>
                 )}
