@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 import "./src/lib/env";
 
 const nextConfig: NextConfig = {
+  // Prevent bundling of server-side libraries that use native modules or dynamic requires
+  serverExternalPackages: ["pino", "pino-pretty"],
   images: {
     remotePatterns: [
       {

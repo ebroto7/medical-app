@@ -6,6 +6,8 @@
  * For multi-instance/serverless deployments, consider using @upstash/ratelimit with Redis.
  */
 
+import { logger } from './logger';
+
 interface RateLimitEntry {
     count: number;
     resetTime: number;
@@ -159,6 +161,13 @@ export function rateLimit(
     if (!result.success) {
         const retryAfter = Math.ceil((result.resetTime - Date.now()) / 1000);
         headers['Retry-After'] = retryAfter.toString();
+
+        // Log rate limit hit
+        logger.warn({
+            ip: identifier,
+            endpoint: configName,
+            limit: config.limit
+        }, 'Rate limit exceeded');
     }
 
     return {

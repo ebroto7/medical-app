@@ -105,9 +105,17 @@ src/
 - **Rate Limiting**: Endpoints de auth protegidos (5 req/min)
 - **Validación de env**: La app falla al iniciar si faltan variables
 - **RBAC**: Control de acceso basado en roles en middleware y API
+- **Logging**: Logging estructurado con Pino para monitoreo
 - **RLS**: Row Level Security en Supabase
 
 Ver [docs/SECURITY.md](docs/SECURITY.md) para más detalles.
+
+## 📡 API y Paginación
+
+La API soporta paginación estándar:
+`GET /api/nutrition/entries?page=1&limit=20`
+
+Ver [docs/API.md](docs/API.md) para documentación completa de endpoints.
 
 ## 🧪 Testing
 

@@ -1,15 +1,10 @@
-"use client";
+/**
+ * Nutritionist Dashboard Page
+ * Redirects to patients page (main view for nutritionists)
+ */
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 
 export default function NutritionistDashboard() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Redirect to the consolidated "Mis Pacientes" page
-    router.push("/dashboard/nutritionist/patients");
-  }, [router]);
-
-  return null;
+  redirect("/dashboard/nutritionist/patients");
 }
