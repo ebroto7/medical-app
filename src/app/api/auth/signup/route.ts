@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
+import rateLimit from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/signup
  *
  * Secure backend endpoint for user registration.
  * Uses service_role_key to bypass RLS and create both auth user and profile atomically.
+ * Rate limited to 5 requests per minute per IP.
  *
  * Request body:
  * {
@@ -25,6 +27,7 @@ import { Database } from '@/types/database';
  * Errors:
  * 400: Missing or invalid fields
  * 422: User already exists or other Supabase auth error
+ * 429: Too many requests (rate limited)
  * 500: Database error
  */
 
@@ -35,6 +38,17 @@ const supabaseAdmin = createClient<Database>(
 
 export async function POST(req: Request) {
   try {
+    // ============================================
+    // RATE LIMITING
+    // ============================================
+    const rateLimitResult = rateLimit(req, 'auth');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     // Parse request body
     const body = await req.json();
     const { email, password, fullName, role } = body;

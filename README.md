@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NutriDiary - Medical App
 
-## Getting Started
+Aplicación de gestión nutricional que conecta pacientes con nutricionistas.
 
-First, run the development server:
+## 🚀 Stack Tecnológico
+
+- **Frontend**: Next.js 16, React 19, TypeScript
+- **Styling**: Tailwind CSS 3 + ShadCN/UI
+- **Backend**: Supabase (Auth, PostgreSQL, Storage)
+- **Validación**: Zod + React Hook Form
+- **Testing**: Vitest
+
+## 📋 Requisitos Previos
+
+- Node.js 18+
+- npm o pnpm
+- Cuenta de Supabase (gratuita)
+
+## 🔧 Instalación
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clonar el repositorio
+git clone <repo-url>
+cd medical-app
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+cp .env.example .env.local
+# Editar .env.local con tus credenciales de Supabase
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Variables de Entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Crea un archivo `.env.local` con las siguientes variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
+SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key
+```
 
-## Learn More
+> ⚠️ La aplicación validará automáticamente estas variables al iniciar. Si falta alguna, verás un mensaje de error claro.
 
-To learn more about Next.js, take a look at the following resources:
+## 🏃 Comandos
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Desarrollo
+npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Build de producción
+npm run build
 
-## Deploy on Vercel
+# Iniciar servidor de producción
+npm run start
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Ejecutar tests
+npm run test
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Tests con watch mode
+npm run test:watch
+
+# Tests con cobertura
+npm run test:coverage
+
+# Linting
+npm run lint
+```
+
+## 📁 Estructura del Proyecto
+
+```
+src/
+├── app/              # App Router (páginas y API routes)
+│   ├── api/          # API endpoints
+│   ├── auth/         # Páginas de autenticación
+│   ├── dashboard/    # Dashboards por rol
+│   └── diary/        # Diario nutricional
+├── components/       # Componentes React
+│   ├── ui/           # ShadCN componentes base
+│   ├── nutrition/    # Componentes de nutrición
+│   └── training/     # Componentes de entrenamiento
+├── lib/              # Utilidades y configuración
+│   ├── auth/         # Helpers de autenticación
+│   ├── validations/  # Schemas Zod
+│   └── env.ts        # Validación de env vars
+├── services/         # Servicios de negocio
+│   └── auth/         # Servicios de autorización
+├── contexts/         # React Contexts
+├── hooks/            # Custom hooks
+└── types/            # TypeScript types
+```
+
+## 👥 Roles de Usuario
+
+| Rol | Descripción |
+|-----|-------------|
+| **patient** | Registra comidas, entrenamientos y ve planes de comida |
+| **nutritionist** | Gestiona pacientes, crea planes de comida, comenta entradas |
+
+## 🔐 Seguridad
+
+- **Rate Limiting**: Endpoints de auth protegidos (5 req/min)
+- **Validación de env**: La app falla al iniciar si faltan variables
+- **RBAC**: Control de acceso basado en roles en middleware y API
+- **RLS**: Row Level Security en Supabase
+
+Ver [docs/SECURITY.md](docs/SECURITY.md) para más detalles.
+
+## 🧪 Testing
+
+Ver [docs/TESTING.md](docs/TESTING.md) para guía completa de testing.
+
+```bash
+# Ejecutar todos los tests
+npm run test
+
+# Ver cobertura
+npm run test:coverage
+```
+
+## 📄 Licencia
+
+MIT
