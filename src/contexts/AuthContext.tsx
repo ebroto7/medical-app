@@ -29,16 +29,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
+    // Global Fail-Safe: Force loading to stop after 4 seconds max
+    // This guarantees the UI never gets stuck in infinite loading loop
+    const globalSafetyTimer = setTimeout(() => {
+      if (isLoading) {
+        console.warn("AuthContext: Global safety timer triggered. Forcing loading false.");
+        setIsLoading(false);
+      }
+    }, 4000);
+
     // Check current session and fetch role
     // Note: Middleware handles token refresh, so we can trust getSession() here
     const checkAuth = async () => {
-      try {
+      // "Safety Valve": Race external auth against a timeout
+      // This prevents the app from hanging indefinitely if the browser has a "zombie cookie"
+      // or if the Supabase SDK enters a deadlock state.
+      const authPromise = async () => {
         const { data: { session } } = await supabase.auth.getSession();
 
         setUser(session?.user || null);
         setToken(session?.access_token || null);
 
-        // Fetch user role from profiles table
         if (session?.user) {
           const { data: profile } = await supabase
             .from('profiles')
@@ -50,13 +61,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setRole(null);
         }
+      };
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Auth timeout")), 3000) // 3s max wait
+      );
+
+      try {
+        await Promise.race([authPromise(), timeoutPromise]);
       } catch (error) {
-        console.error("Auth check error:", error);
-        // Don't sign out on error - let middleware handle session issues
-        setUser(null);
-        setToken(null);
-        setRole(null);
+        console.warn("Auth check failed or timed out - verify browser state:", error);
+
+        // Recovery Strategy: If we timed out, the local state is likely corrupted.
+        // We force a localized signOut to clear cookies/storage without refreshing.
+        if (error instanceof Error && error.message === "Auth timeout") {
+          console.log("AuthContext: Timeout detected. Forcing local session cleanup...");
+          // Use 'local' scope to prevent hanging on network request during recovery
+          await supabase.auth.signOut({ scope: 'local' });
+          console.log("AuthContext: Local cleanup done. Resetting state.");
+          setUser(null);
+          setToken(null);
+          setRole(null);
+        }
       } finally {
+        console.log("AuthContext: Finally block - stopping loader");
         setIsLoading(false);
       }
     };
@@ -85,6 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       subscription?.unsubscribe();
+      // Clear safety timer if component unmounts
+      clearTimeout(globalSafetyTimer);
     };
   }, []);
 
@@ -123,9 +153,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    setUser(null);
+    try {
+      // Attempt server logout, but race against timeout to prevent hanging
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("SignOut timeout")), 2000)
+      );
+
+      await Promise.race([signOutPromise, timeoutPromise]);
+    } catch (error) {
+      console.warn("AuthContext: SignOut failed or timed out, forcing local cleanup:", error);
+    } finally {
+      // Always clear local state to ensure UI updates
+      setUser(null);
+      setToken(null);
+      setRole(null);
+    }
   };
 
   return (

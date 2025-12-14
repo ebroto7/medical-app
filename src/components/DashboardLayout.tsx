@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "./Sidebar";
 
@@ -10,6 +11,14 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, role, isLoading } = useAuth();
+  const router = useRouter();
+
+  // Active redirect if auth fails/clears
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push("/auth/login");
+    }
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return (
