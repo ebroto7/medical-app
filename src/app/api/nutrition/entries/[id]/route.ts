@@ -46,6 +46,8 @@ export async function GET(
   }
 }
 
+import { logger } from "@/lib/logger";
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -61,17 +63,21 @@ export async function PUT(
 
     // 3. Verify ownership
     const supabase = await createClient();
+
+    // Debug tracer for ownership check
     const { data: existingEntry } = await supabase
       .from("nutrition_entries")
       .select("user_id")
       .eq("id", id)
       .single();
 
+
     if (!existingEntry) {
       return Response.json({ error: "Entry not found" }, { status: 404 });
     }
 
     if (existingEntry.user_id !== user.id) {
+      logger.warn({ userId: user.id, entryId: id }, "Unauthorized update attempt");
       return Response.json(
         { error: "You do not have permission to update this entry" },
         { status: 403 }
@@ -92,6 +98,7 @@ export async function PUT(
       .select();
 
     if (error) {
+      logger.error({ error, entryId: id }, "Error updating entry");
       return Response.json({ error: error.message }, { status: 500 });
     }
 
@@ -99,6 +106,7 @@ export async function PUT(
       return Response.json({ error: "Entry not found" }, { status: 404 });
     }
 
+    logger.info({ userId: user.id, entryId: id }, "Entry updated");
     return Response.json({ data: data[0] });
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -110,6 +118,7 @@ export async function PUT(
         { status: 400 }
       );
     }
+    logger.error({ error }, "Internal server error in entries/[id]");
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -137,6 +146,7 @@ export async function DELETE(
     }
 
     if (existingEntry.user_id !== user.id) {
+      logger.warn({ userId: user.id, entryId: id }, "Unauthorized delete attempt");
       return Response.json(
         { error: "You do not have permission to delete this entry" },
         { status: 403 }
@@ -150,14 +160,17 @@ export async function DELETE(
       .eq("id", id);
 
     if (error) {
+      logger.error({ error, entryId: id }, "Error deleting entry");
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    logger.info({ userId: user.id, entryId: id }, "Entry deleted");
     return Response.json({ message: "Entry deleted" }, { status: 200 });
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return Response.json({ error: error.message }, { status: 401 });
     }
+    logger.error({ error }, "Internal server error in entries/[id]");
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
