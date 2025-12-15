@@ -12,13 +12,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Plus, Trash2, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 import {
   PlanMealType,
   PLAN_MEAL_TYPE_CONFIG,
   PLAN_MEAL_TYPES,
   getMealTypeLabel,
 } from "@/config/meal-plan-types";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface SituationalSlot {
   id: string;
@@ -30,6 +47,7 @@ interface SituationalSlot {
   protein?: number;
   carbs?: number;
   fat?: number;
+  sort_order?: number;
 }
 
 interface SituationalPlan {
@@ -38,6 +56,7 @@ interface SituationalPlan {
   description?: string;
   slots: SituationalSlot[];
   isExpanded: boolean;
+  sort_order?: number;
 }
 
 interface MealPlanData {
@@ -49,6 +68,7 @@ interface MealPlanData {
     title: string;
     description?: string;
     slots: SituationalSlot[];
+    sort_order?: number;
   }>;
 }
 
@@ -57,6 +77,123 @@ interface EditSituationalPlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdated: () => void;
+}
+
+function SortableSlotCard({
+  slot,
+  onRemove,
+  updateSlot,
+  planId
+}: {
+  slot: SituationalSlot;
+  onRemove: () => void;
+  updateSlot: (id: string, updates: Partial<SituationalSlot>) => void;
+  planId: string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: slot.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : "auto",
+    position: isDragging ? "relative" as const : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex gap-3 items-start p-3 bg-background border rounded-md ${isDragging ? "shadow-lg ring-2 ring-primary opacity-80" : ""}`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="mt-2 text-muted-foreground cursor-grab hover:text-foreground touch-none"
+      >
+        <GripVertical className="h-5 w-5" />
+      </div>
+      <div className="text-2xl pt-1">
+        {PLAN_MEAL_TYPE_CONFIG[slot.meal_type].emoji}
+      </div>
+      <div className="flex-1 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">
+            {getMealTypeLabel(slot.meal_type)}
+          </span>
+        </div>
+        <Input
+          value={slot.meal_name}
+          onChange={(e) => updateSlot(slot.id, { meal_name: e.target.value })}
+          placeholder="Nombre del plato *"
+          className="font-medium"
+        />
+        <Textarea
+          value={slot.description || ""}
+          onChange={(e) => updateSlot(slot.id, { description: e.target.value })}
+          placeholder="Descripcion / ingredientes..."
+          rows={2}
+          className="text-sm"
+        />
+        <div className="grid grid-cols-4 gap-2">
+          <div>
+            <label className="text-xs text-muted-foreground">Kcal</label>
+            <Input
+              type="number"
+              value={slot.calories || ""}
+              onChange={(e) => updateSlot(slot.id, { calories: e.target.value ? Number(e.target.value) : undefined })}
+              placeholder="0"
+              className="text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Prot (g)</label>
+            <Input
+              type="number"
+              value={slot.protein || ""}
+              onChange={(e) => updateSlot(slot.id, { protein: e.target.value ? Number(e.target.value) : undefined })}
+              placeholder="0"
+              className="text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Carbs (g)</label>
+            <Input
+              type="number"
+              value={slot.carbs || ""}
+              onChange={(e) => updateSlot(slot.id, { carbs: e.target.value ? Number(e.target.value) : undefined })}
+              placeholder="0"
+              className="text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Grasa (g)</label>
+            <Input
+              type="number"
+              value={slot.fat || ""}
+              onChange={(e) => updateSlot(slot.id, { fat: e.target.value ? Number(e.target.value) : undefined })}
+              placeholder="0"
+              className="text-sm"
+            />
+          </div>
+        </div>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onRemove}
+        className="text-destructive hover:text-destructive"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 }
 
 export function EditSituationalPlanDialog({
@@ -69,15 +206,32 @@ export function EditSituationalPlanDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [situationalPlans, setSituationalPlans] = useState<SituationalPlan[]>([]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   useEffect(() => {
     if (open && plan.situational_plans) {
       setSituationalPlans(
-        plan.situational_plans.map(sp => ({
-          ...sp,
-          id: sp.id || crypto.randomUUID(),
-          isExpanded: true,
-          slots: sp.slots.map(s => ({ ...s, id: s.id || crypto.randomUUID() })),
-        }))
+        plan.situational_plans
+          // Apply sort order if present
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map(sp => ({
+            ...sp,
+            id: sp.id || crypto.randomUUID(),
+            isExpanded: true,
+            slots: sp.slots
+              .sort((a, b) => {
+                if (a.sort_order !== undefined && b.sort_order !== undefined) {
+                  return a.sort_order - b.sort_order;
+                }
+                return PLAN_MEAL_TYPE_CONFIG[a.meal_type].sortOrder - PLAN_MEAL_TYPE_CONFIG[b.meal_type].sortOrder;
+              })
+              .map(s => ({ ...s, id: s.id || crypto.randomUUID() })),
+          }))
       );
     }
   }, [open, plan]);
@@ -88,6 +242,7 @@ export function EditSituationalPlanDialog({
       title: "",
       slots: [],
       isExpanded: true,
+      sort_order: situationalPlans.length,
     };
     setSituationalPlans([...situationalPlans, newPlan]);
   };
@@ -109,10 +264,12 @@ export function EditSituationalPlanDialog({
   };
 
   const addSlotToPlan = (planId: string, mealType: PlanMealType) => {
+    const targetPlan = situationalPlans.find(p => p.id === planId);
     const newSlot: SituationalSlot = {
       id: crypto.randomUUID(),
       meal_type: mealType,
       meal_name: "",
+      sort_order: targetPlan ? targetPlan.slots.length : 0 // Add to end
     };
     setSituationalPlans(plans =>
       plans.map(p => p.id === planId
@@ -138,6 +295,29 @@ export function EditSituationalPlanDialog({
         : p
       )
     );
+  };
+
+  const handleDragEnd = (event: DragEndEvent, planId: string) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setSituationalPlans(plans =>
+        plans.map(p => {
+          if (p.id !== planId) return p;
+
+          const oldIndex = p.slots.findIndex(s => s.id === active.id);
+          const newIndex = p.slots.findIndex(s => s.id === over.id);
+
+          if (oldIndex === -1 || newIndex === -1) return p;
+
+          const newSlots = arrayMove(p.slots, oldIndex, newIndex);
+
+          // Update sort_order for persistence
+          const updatedSlots = newSlots.map((s, idx) => ({ ...s, sort_order: idx }));
+
+          return { ...p, slots: updatedSlots };
+        })
+      );
+    }
   };
 
   const handleSave = async () => {
@@ -258,96 +438,35 @@ export function EditSituationalPlanDialog({
                       ))}
                     </div>
 
-                    {/* Slots */}
-                    <div className="space-y-3">
-                      {sitPlan.slots
-                        .sort((a, b) =>
-                          PLAN_MEAL_TYPE_CONFIG[a.meal_type].sortOrder - PLAN_MEAL_TYPE_CONFIG[b.meal_type].sortOrder
-                        )
-                        .map((slot) => (
-                          <div key={slot.id} className="flex gap-3 items-start p-3 bg-background border rounded-md">
-                            <div className="text-2xl">
-                              {PLAN_MEAL_TYPE_CONFIG[slot.meal_type].emoji}
-                            </div>
-                            <div className="flex-1 space-y-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-muted-foreground">
-                                  {getMealTypeLabel(slot.meal_type)}
-                                </span>
-                              </div>
-                              <Input
-                                value={slot.meal_name}
-                                onChange={(e) => updateSlot(sitPlan.id, slot.id, { meal_name: e.target.value })}
-                                placeholder="Nombre del plato *"
-                                className="font-medium"
-                              />
-                              <Textarea
-                                value={slot.description || ""}
-                                onChange={(e) => updateSlot(sitPlan.id, slot.id, { description: e.target.value })}
-                                placeholder="Descripcion / ingredientes..."
-                                rows={2}
-                                className="text-sm"
-                              />
-                              <div className="grid grid-cols-4 gap-2">
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Kcal</label>
-                                  <Input
-                                    type="number"
-                                    value={slot.calories || ""}
-                                    onChange={(e) => updateSlot(sitPlan.id, slot.id, { calories: e.target.value ? Number(e.target.value) : undefined })}
-                                    placeholder="0"
-                                    className="text-sm"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Prot (g)</label>
-                                  <Input
-                                    type="number"
-                                    value={slot.protein || ""}
-                                    onChange={(e) => updateSlot(sitPlan.id, slot.id, { protein: e.target.value ? Number(e.target.value) : undefined })}
-                                    placeholder="0"
-                                    className="text-sm"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Carbs (g)</label>
-                                  <Input
-                                    type="number"
-                                    value={slot.carbs || ""}
-                                    onChange={(e) => updateSlot(sitPlan.id, slot.id, { carbs: e.target.value ? Number(e.target.value) : undefined })}
-                                    placeholder="0"
-                                    className="text-sm"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Grasa (g)</label>
-                                  <Input
-                                    type="number"
-                                    value={slot.fat || ""}
-                                    onChange={(e) => updateSlot(sitPlan.id, slot.id, { fat: e.target.value ? Number(e.target.value) : undefined })}
-                                    placeholder="0"
-                                    className="text-sm"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeSlot(sitPlan.id, slot.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+                    {/* Slots List with DnD */}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={(e) => handleDragEnd(e, sitPlan.id)}
+                    >
+                      <SortableContext
+                        items={sitPlan.slots.map(s => s.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-3">
+                          {sitPlan.slots.map((slot) => (
+                            <SortableSlotCard
+                              key={slot.id}
+                              slot={slot}
+                              onRemove={() => removeSlot(sitPlan.id, slot.id)}
+                              updateSlot={(id, ups) => updateSlot(sitPlan.id, id, ups)}
+                              planId={sitPlan.id}
+                            />
+                          ))}
 
-                      {sitPlan.slots.length === 0 && (
-                        <div className="text-center py-4 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
-                          Anade comidas usando los botones de arriba
+                          {sitPlan.slots.length === 0 && (
+                            <div className="text-center py-4 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
+                              Anade comidas usando los botones de arriba
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 )}
               </div>
