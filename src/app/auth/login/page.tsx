@@ -22,6 +22,8 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
+      // Force a refresh to ensure server components see the new session immediately
+      router.refresh();
       router.push("/dashboard");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Error al iniciar sesión";

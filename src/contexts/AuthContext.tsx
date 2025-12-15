@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { Database } from "@/types/database";
 import type { User } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 
 const supabase = createBrowserClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     // Global Fail-Safe: Force loading to stop after 4 seconds max
@@ -154,20 +156,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Attempt server logout, but race against timeout to prevent hanging
-      const signOutPromise = supabase.auth.signOut();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("SignOut timeout")), 2000)
-      );
+      // 1. Call server-side logout to clear HTTP-only cookies
+      await fetch('/api/auth/signout', {
+        method: 'POST',
+      });
 
-      await Promise.race([signOutPromise, timeoutPromise]);
+      // 2. Also call client-side signout
+      await supabase.auth.signOut();
+
     } catch (error) {
-      console.warn("AuthContext: SignOut failed or timed out, forcing local cleanup:", error);
+      console.warn("AuthContext: SignOut error:", error);
     } finally {
-      // Always clear local state to ensure UI updates
+      // Always clear local state
       setUser(null);
       setToken(null);
       setRole(null);
+      router.refresh();
     }
   };
 
