@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, List, Loader2, Trash2, Eye } from "lucide-react";
+import { Calendar, List, Loader2 } from "lucide-react";
 import { MealPlanViewDialog } from "./MealPlanViewDialog";
 
 interface MealPlan {
@@ -35,7 +34,6 @@ export function MealPlansList({
   const [plans, setPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -62,8 +60,6 @@ export function MealPlansList({
   }, [token, patientId, onRefresh]);
 
   const handleDelete = async (planId: string) => {
-    if (!confirm("¿Eliminar esta pauta?")) return;
-    setDeletingId(planId);
     try {
       const res = await fetch(`/api/meal-plans/${planId}`, {
         method: "DELETE",
@@ -74,8 +70,6 @@ export function MealPlansList({
       }
     } catch (error) {
       console.error("Error deleting:", error);
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -99,7 +93,11 @@ export function MealPlansList({
     <>
       <div className="space-y-3">
         {plans.map((plan) => (
-          <Card key={plan.id} className="p-4">
+          <Card
+            key={plan.id}
+            className="p-4 cursor-pointer hover:border-primary hover:shadow-md transition-all"
+            onClick={() => setSelectedPlanId(plan.id)}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-lg ${plan.type === "weekly" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
@@ -125,28 +123,6 @@ export function MealPlansList({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedPlanId(plan.id)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(plan.id)}
-                  disabled={deletingId === plan.id}
-                  className="text-destructive hover:text-destructive"
-                >
-                  {deletingId === plan.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
             </div>
           </Card>
         ))}
@@ -159,6 +135,7 @@ export function MealPlansList({
           onOpenChange={(open) => !open && setSelectedPlanId(null)}
           canEdit={canEdit}
           onUpdated={fetchPlans}
+          onDelete={() => handleDelete(selectedPlanId)}
         />
       )}
     </>

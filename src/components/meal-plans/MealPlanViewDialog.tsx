@@ -9,10 +9,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Calendar, List, Pencil, History } from "lucide-react";
+import { Loader2, Calendar, List, Pencil, History, Trash2 } from "lucide-react";
+import { WeeklyPlanGrid, WeeklySlot } from "./WeeklyPlanGrid";
 import {
   PLAN_MEAL_TYPE_CONFIG,
-  DAYS_OF_WEEK,
   getMealTypeLabel,
   PlanMealType,
 } from "@/config/meal-plan-types";
@@ -20,18 +20,8 @@ import { EditWeeklyPlanDialog } from "./EditWeeklyPlanDialog";
 import { EditSituationalPlanDialog } from "./EditSituationalPlanDialog";
 import { VersionHistoryDialog } from "./VersionHistoryDialog";
 
-interface WeeklySlot {
-  id: string;
-  day_of_week: number;
-  meal_type: PlanMealType;
-  meal_name: string;
-  description?: string;
-  notes?: string;
-  calories?: number;
-  protein?: number;
-  carbs?: number;
-  fat?: number;
-}
+// removed WeeklySlot definition as it is imported
+
 
 interface SituationalSlot {
   id: string;
@@ -69,6 +59,7 @@ interface MealPlanViewDialogProps {
   onOpenChange: (open: boolean) => void;
   canEdit?: boolean;
   onUpdated?: () => void;
+  onDelete?: () => Promise<void>;
 }
 
 export function MealPlanViewDialog({
@@ -77,6 +68,7 @@ export function MealPlanViewDialog({
   onOpenChange,
   canEdit = false,
   onUpdated,
+  onDelete,
 }: MealPlanViewDialogProps) {
   const { token } = useAuth();
   const [plan, setPlan] = useState<MealPlanFull | null>(null);
@@ -127,47 +119,66 @@ export function MealPlanViewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : plan ? (
-          <>
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              {loading ? (
+                <span>Cargando pauta...</span>
+              ) : plan ? (
+                <>
                   {plan.type === "weekly" ? (
                     <Calendar className="h-5 w-5 text-blue-600" />
                   ) : (
                     <List className="h-5 w-5 text-purple-600" />
                   )}
                   {plan.name}
-                </DialogTitle>
-                {canEdit && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowVersionHistory(true)}
-                    >
-                      <History className="h-4 w-4 mr-1" />
-                      Historial
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        plan.type === "weekly"
-                          ? setShowEditWeekly(true)
-                          : setShowEditSituational(true)
+                </>
+              ) : (
+                <span>Error</span>
+              )}
+            </DialogTitle>
+            {!loading && plan && canEdit && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowVersionHistory(true)}
+                >
+                  <History className="h-4 w-4 mr-1" />
+                  Historial
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    plan.type === "weekly"
+                      ? setShowEditWeekly(true)
+                      : setShowEditSituational(true)
+                  }
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Editar
+                </Button>
+                {onDelete && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={async () => {
+                      if (confirm("¿Estás seguro de que quieres eliminar esta pauta? Esta acción no se puede deshacer.")) {
+                        await onDelete();
+                        onOpenChange(false);
                       }
-                    >
-                      <Pencil className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
-                  </div>
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Eliminar
+                  </Button>
                 )}
               </div>
+            )}
+          </div>
+          {!loading && plan && (
+            <>
               {plan.description && (
                 <p className="text-sm text-muted-foreground">{plan.description}</p>
               )}
@@ -176,49 +187,24 @@ export function MealPlanViewDialog({
                   Creada por: {plan.nutritionist.full_name}
                 </p>
               )}
-            </DialogHeader>
+            </>
+          )}
+        </DialogHeader>
 
-            <div className="space-y-4 mt-4">
+        <div className="mt-4">
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : plan ? (
+            <div className="space-y-4">
               {plan.type === "weekly" && plan.weekly_slots && (
-                <>
-                  {DAYS_OF_WEEK.map((day) => {
-                    const daySlots = plan.weekly_slots!
-                      .filter(s => s.day_of_week === day.value)
-                      .sort((a, b) =>
-                        PLAN_MEAL_TYPE_CONFIG[a.meal_type].sortOrder - PLAN_MEAL_TYPE_CONFIG[b.meal_type].sortOrder
-                      );
-                    if (daySlots.length === 0) return null;
-                    return (
-                      <div key={day.value} className="border rounded-lg p-4">
-                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
-                            {day.short}
-                          </span>
-                          {day.label}
-                        </h3>
-                        <div className="space-y-3">
-                          {daySlots.map((slot) => (
-                            <div key={slot.id} className="flex gap-3 p-3 bg-muted/30 rounded-md">
-                              <div className="text-2xl">
-                                {PLAN_MEAL_TYPE_CONFIG[slot.meal_type].emoji}
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-xs text-muted-foreground">
-                                  {getMealTypeLabel(slot.meal_type)}
-                                </div>
-                                <div className="font-medium">{slot.meal_name}</div>
-                                {slot.description && (
-                                  <p className="text-sm text-muted-foreground">{slot.description}</p>
-                                )}
-                                {renderMacros(slot)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </>
+                <div className="overflow-x-auto">
+                  <WeeklyPlanGrid
+                    slots={plan.weekly_slots}
+                    readOnly={true}
+                  />
+                </div>
               )}
 
               {plan.type === "situational" && plan.situational_plans && (
@@ -262,12 +248,12 @@ export function MealPlanViewDialog({
                 </>
               )}
             </div>
-          </>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            Error al cargar la pauta
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Error al cargar la pauta
+            </div>
+          )}
+        </div>
       </DialogContent>
 
       {/* Edit Dialogs */}
