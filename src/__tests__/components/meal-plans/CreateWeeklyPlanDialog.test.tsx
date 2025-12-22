@@ -12,9 +12,31 @@ vi.mock('@/contexts/AuthContext', () => ({
     useAuth: vi.fn(),
 }));
 
-// Mock UI components if necessary, but we want integration tests.
-// Dialog depends on Radix UI, which works in JSDOM usually but sometimes needs pointer event mocks.
-// For now we assume standard JSDOM.
+// Mock UI components if necessary
+// Mock WeeklyPlanGrid to avoid Radix UI / DnD complexity in this dialog test
+vi.mock('@/components/meal-plans/WeeklyPlanGrid', () => ({
+    WeeklyPlanGrid: ({ slots, onSlotsChange }: any) => (
+        <div data-testid="weekly-plan-grid">
+            <button
+                onClick={() => onSlotsChange([
+                    ...slots,
+                    {
+                        id: 's1',
+                        day: 'monday',
+                        meal_name: 'Oatmeal',
+                        meal_type: 'breakfast'
+                    }
+                ])}
+            >
+                Add Mock Slot
+            </button>
+            <ul>
+                {slots.map((s: any) => <li key={s.id}>{s.meal_name}</li>)}
+            </ul>
+        </div>
+    ),
+    WeeklySlot: () => null // Mock export if needed
+}));
 
 describe('CreateWeeklyPlanDialog', () => {
     const mockToken = 'mock-token';
@@ -69,15 +91,11 @@ describe('CreateWeeklyPlanDialog', () => {
             />
         );
 
-        // Add slot button
-        const addBtn = screen.getByText('Añadir comida');
-        fireEvent.click(addBtn);
+        // Add slot button (from mock)
+        fireEvent.click(screen.getByText('Add Mock Slot'));
 
-        // Should see slot inputs
-        expect(screen.getByPlaceholderText('Nombre del plato *')).toBeInTheDocument();
-        // Check for slot render via placeholder which is more reliable than text inside option/header
-        expect(screen.getByPlaceholderText('Nombre del plato *')).toBeInTheDocument();
-        // Skip 'Lunes' text check as it can be flaky with Select options in JSDOM
+        // Should see slot render
+        expect(screen.getByText('Oatmeal')).toBeInTheDocument();
     });
 
     it('submits valid form', async () => {
@@ -99,12 +117,11 @@ describe('CreateWeeklyPlanDialog', () => {
         // Fill Name - use fireEvent for reliability with controlled inputs in tests
         fireEvent.change(screen.getByPlaceholderText('Ej: Pauta de mantenimiento'), { target: { value: 'My Diet' } });
 
-        // Add Slot
-        fireEvent.click(screen.getByText('Añadir comida'));
+        // Add Slot using mock
+        fireEvent.click(screen.getByText('Add Mock Slot'));
 
-        // Fill Slot Name
-        const slotInput = screen.getByPlaceholderText('Nombre del plato *');
-        fireEvent.change(slotInput, { target: { value: 'Oatmeal' } });
+        // Wait for slot (Oatmeal is added by mock default)
+        expect(screen.getByText('Oatmeal')).toBeInTheDocument();
 
         // Click Save
         const saveBtn = screen.getByText('Crear Pauta');

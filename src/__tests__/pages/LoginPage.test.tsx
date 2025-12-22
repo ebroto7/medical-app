@@ -10,6 +10,7 @@ const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
     useRouter: () => ({
         push: mockPush,
+        refresh: vi.fn(),
     }),
 }));
 

@@ -13,8 +13,14 @@ vi.mock('@/contexts/AuthContext', () => ({
 
 // Mock child dialog to avoid testing complexity here
 vi.mock('@/components/meal-plans/MealPlanViewDialog', () => ({
-    MealPlanViewDialog: ({ open, onOpenChange }: any) => (
-        open ? <div data-testid="view-dialog" onClick={() => onOpenChange(false)}>Dialog Open</div> : null
+    MealPlanViewDialog: ({ open, onOpenChange, onDelete }: any) => (
+        open ? (
+            <div data-testid="view-dialog">
+                Dialog Open
+                <button onClick={() => onOpenChange(false)}>Close</button>
+                <button onClick={onDelete} data-testid="mock-delete-btn">Delete</button>
+            </div>
+        ) : null
     ),
 }));
 
@@ -54,15 +60,6 @@ describe('MealPlansList', () => {
         (global.fetch as any).mockImplementation(() => new Promise(() => { }));
 
         render(<MealPlansList />);
-        // Loader2 is usually an SVG, but we look for "animate-spin" class or similar if role is not clear, 
-        // but better to look for behavior or text if possible. 
-        // The component renders a Loader2 icon inside a div.
-        // Let's rely on the fact that nothing else is rendered.
-        // Or we can query by a loading accessible name if added, but currently it's just an icon.
-        // We can assume it's loading if we don't see "No hay pautas" or list.
-
-        // Actually, testing-library recommends aria roles. 
-        // Let's just wait for verify checking "No hay pautas" is NOT there yet and we can find spinner by class or verify fetch called.
         expect(global.fetch).toHaveBeenCalledWith('/api/meal-plans', expect.anything());
     });
 
@@ -115,26 +112,30 @@ describe('MealPlansList', () => {
             expect(screen.getByText('Weekly Plan A')).toBeInTheDocument();
         });
 
-        // Find delete button for first plan. 
-        // Since there are multiple Trash2 icons, we need to be careful.
-        // We can use getAllByRole('button') or simpler: match by closest card?
-        // The card has the text.
+        // Click the card to open the dialog
+        fireEvent.click(screen.getByText('Weekly Plan A'));
 
-        // Let's assume buttons order matches plans order.
-        // Buttons per card: Eye, Trash.
-        const buttons = screen.getAllByRole('button'); // 2 per card * 2 cards = 4 buttons.
-        // [Eye1, Trash1, Eye2, Trash2]
+        // Wait for dialog
+        await waitFor(() => {
+            expect(screen.getByTestId('view-dialog')).toBeInTheDocument();
+        });
 
-        // Click Trash on first plan
-        fireEvent.click(buttons[1]);
+        // Click delete in the mock dialog
+        fireEvent.click(screen.getByTestId('mock-delete-btn'));
 
-        expect(global.confirm).toHaveBeenCalled();
-        expect(global.fetch).toHaveBeenCalledWith(
-            `/api/meal-plans/plan-1`,
-            expect.objectContaining({ method: 'DELETE' })
-        );
+        // handleDelete (the prop passed to child) calls the API. 
+        // Note: The mock child calls onDelete passed from parent. Parent calls handleDelete.
 
-        // Should remove from document
+        // Wait for API call
+        await waitFor(() => {
+            expect(global.fetch).toHaveBeenCalledWith(
+                `/api/meal-plans/plan-1`,
+                expect.objectContaining({ method: 'DELETE' })
+            );
+        });
+
+        // Should remove from document 
+        // Note: handleDelete in component calls setPlans(filter...), so UI should update.
         await waitFor(() => {
             expect(screen.queryByText('Weekly Plan A')).not.toBeInTheDocument();
         });
@@ -152,9 +153,8 @@ describe('MealPlansList', () => {
             expect(screen.getByText('Weekly Plan A')).toBeInTheDocument();
         });
 
-        const buttons = screen.getAllByRole('button');
-        // Click Eye on first plan (index 0)
-        fireEvent.click(buttons[0]);
+        // Click the card (finding by text inside it)
+        fireEvent.click(screen.getByText('Weekly Plan A'));
 
         await waitFor(() => {
             expect(screen.getByTestId('view-dialog')).toBeInTheDocument();

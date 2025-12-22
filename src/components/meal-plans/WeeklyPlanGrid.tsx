@@ -17,7 +17,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, X, Info, GripVertical } from "lucide-react";
+import { Plus, X, Info, GripVertical, MoreHorizontal } from "lucide-react";
 import {
     DAYS_OF_WEEK,
     PlanMealType,
@@ -30,6 +30,8 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { SaveMealDialog } from "@/components/saved-meals/SaveMealDialog";
+import { SavedMealsDialog } from "@/components/saved-meals/SavedMealsDialog";
 
 import {
     DndContext,
@@ -268,6 +270,36 @@ export function WeeklyPlanGrid({
         }
     };
 
+    const updateSlotBatch = (
+        day: number,
+        type: PlanMealType,
+        updates: Partial<WeeklySlot>
+    ) => {
+        if (!onSlotsChange) return;
+
+        const existingSlot = getSlot(day, type);
+        const typeIndex = activeMealTypes.indexOf(type);
+        const currentSortOrder = typeIndex >= 0 ? typeIndex : 999;
+
+        if (existingSlot) {
+            onSlotsChange(
+                slots.map((s) =>
+                    s.id === existingSlot.id ? { ...s, ...updates, sort_order: currentSortOrder } : s
+                )
+            );
+        } else {
+            const newSlot: WeeklySlot = {
+                id: crypto.randomUUID(),
+                day_of_week: day,
+                meal_type: type,
+                meal_name: "",
+                ...updates,
+                sort_order: currentSortOrder,
+            };
+            onSlotsChange([...slots, newSlot]);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <DndContext
@@ -357,7 +389,7 @@ export function WeeklyPlanGrid({
                                                                             )
                                                                         }
                                                                         className="h-8 text-sm bg-background"
-                                                                        placeholder="..."
+                                                                        placeholder="Nombre del plato"
                                                                     />
                                                                     {(slot?.meal_name || "")
                                                                         .length > 0 && (
@@ -366,9 +398,10 @@ export function WeeklyPlanGrid({
                                                                                     <Button
                                                                                         variant="ghost"
                                                                                         size="icon"
-                                                                                        className="h-5 w-5 absolute right-1 top-1.5 opacity-0 group-hover:opacity-100 text-muted-foreground"
+                                                                                        className="h-5 w-5 absolute right-1 top-1.5 text-muted-foreground hover:bg-muted"
+                                                                                        title="Opciones del plato y Guardar"
                                                                                     >
-                                                                                        <Info className="h-3 w-3" />
+                                                                                        <MoreHorizontal className="h-3 w-3" />
                                                                                     </Button>
                                                                                 </PopoverTrigger>
                                                                                 <PopoverContent className="w-80 p-3">
@@ -435,6 +468,31 @@ export function WeeklyPlanGrid({
                                                                                                     onChange={(e) => updateSlot(day.value, type, "fat", e.target.value ? Number(e.target.value) : undefined)}
                                                                                                 />
                                                                                             </div>
+                                                                                        </div>
+                                                                                        <div className="flex gap-2 pt-2 mt-2 border-t">
+                                                                                            <div className="flex-1">
+                                                                                                <SavedMealsDialog
+                                                                                                    onSelect={(meal) => updateSlotBatch(day.value, type, {
+                                                                                                        meal_name: meal.name,
+                                                                                                        description: meal.description || undefined,
+                                                                                                        calories: meal.calories || undefined,
+                                                                                                        protein: meal.protein || undefined,
+                                                                                                        carbs: meal.carbs || undefined,
+                                                                                                        fat: meal.fat || undefined
+                                                                                                    })}
+                                                                                                />
+                                                                                            </div>
+                                                                                            <SaveMealDialog
+                                                                                                defaultValues={{
+                                                                                                    name: slot?.meal_name || "",
+                                                                                                    description: slot?.description || "",
+                                                                                                    calories: slot?.calories,
+                                                                                                    protein: slot?.protein,
+                                                                                                    carbs: slot?.carbs,
+                                                                                                    fat: slot?.fat,
+                                                                                                    meal_type: type as any
+                                                                                                }}
+                                                                                            />
                                                                                         </div>
                                                                                     </div>
                                                                                 </PopoverContent>

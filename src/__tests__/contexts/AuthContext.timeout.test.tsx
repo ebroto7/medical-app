@@ -29,6 +29,17 @@ vi.mock('@supabase/ssr', () => ({
     }),
 }));
 
+vi.mock('next/navigation', () => ({
+    useRouter: () => ({
+        push: vi.fn(),
+        replace: vi.fn(),
+        prefetch: vi.fn(),
+        refresh: vi.fn(),
+    }),
+    usePathname: () => '/',
+    useSearchParams: () => new URLSearchParams(),
+}));
+
 // Test component to consume the context
 const TestComponent = () => {
     const { isLoading, user } = useAuth();

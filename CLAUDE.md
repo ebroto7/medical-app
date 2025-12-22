@@ -5,39 +5,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Development Commands
 
 ```bash
-npm run dev      # Dev server with Turbopack
-npm run build    # Production build
-npm run start    # Run production build
-npm run lint     # ESLint
+npm run dev          # Dev server with Turbopack
+npm run build        # Production build
+npm run start        # Run production build
+npm run lint         # ESLint
+npm run test         # Run Vitest unit tests
+npm run test:watch   # Vitest watch mode
+npm run test:e2e     # Playwright E2E tests
+npm run db:types     # Generate TypeScript types from Supabase schema
 ```
-
-No test framework is configured.
 
 ## Architecture Overview
 
-NutriDiary is a nutrition tracking app connecting patients with nutritionists. Built with Next.js 15 (App Router) + Supabase + TypeScript.
+NutriDiary is a nutrition tracking app connecting patients with nutritionists. Built with **Next.js 16** (App Router) + Supabase + TypeScript.
 
-### Authentication Flow
+### Authentication Flow (Next.js 16 Pattern)
 
 ```
-Browser (AuthContext)     Middleware              API Routes
-       │                      │                        │
-       ├─ createBrowserClient │                        │
-       │                      │                        │
-       │  GET /dashboard/*    │                        │
-       │ ────────────────────>│                        │
-       │                      ├─ getUser() [refreshes] │
-       │                      ├─ role check            │
-       │                      │                        │
-       │  GET /api/*          │                        │
-       │ ───────────────────────────────────────────>  │
-       │                      │                        ├─ requireAuth()
-       │                      │                        ├─ requireRole()
+Browser (AuthContext)     Proxy (Next.js 16)     Server Components       API Routes
+       │                      │                        │                      │
+       ├─ createBrowserClient │                        │                      │
+       │                      │                        │                      │
+       │  GET /dashboard/*    │                        │                      │
+       │ ────────────────────>│                        │                      │
+       │                      ├─ refreshSession()      │                      │
+       │                      │   (cookie refresh)     │                      │
+       │                      ├───────────────────────>│                      │
+       │                      │                        ├─ requirePageAuth()   │
+       │                      │                        ├─ requirePageRole()   │
+       │                      │                        │   (server redirect)  │
+       │                      │                        │                      │
+       │  GET /api/*          │                        │                      │
+       │ ───────────────────────────────────────────────────────────────────>│
+       │                      │                        │                      ├─ requireAuth()
+       │                      │                        │                      ├─ requireRole()
 ```
 
-- **Middleware** (`src/utils/supabase/middleware.ts`): Refreshes session tokens + route protection
-- **AuthContext** (`src/contexts/AuthContext.tsx`): Client-side auth state via `onAuthStateChange`
-- **API helpers** (`src/lib/auth/api-helpers.ts`): Reusable auth decorators for routes
+**Key Components**:
+
+- **Proxy** (`src/proxy.ts`): Next.js 16 lightweight request interceptor - only handles session refresh (replaces traditional middleware)
+- **Session Helpers** (`src/utils/supabase/session.ts`): Cookie propagation and token refresh utilities
+- **Page Auth** (`src/lib/auth/page-auth.ts`): Server Component auth guards with redirect logic
+- **AuthContext** (`src/contexts/AuthContext.tsx`): Client-side auth state via `onAuthStateChange` with timeout recovery
+- **API helpers** (`src/lib/auth/api-helpers.ts`): Reusable auth decorators for API routes
+
+**Why This Architecture (Next.js 16)**:
+- Traditional middleware is deprecated in Next.js 16
+- Proxy handles only session refresh (fast, runs on Edge)
+- Server Components handle auth/role validation with server-side redirects
+- No flash of unauthorized content (redirect happens before render)
 
 ### API Route Pattern
 
@@ -91,9 +107,9 @@ canAccessPatientData(userId, patientId)    // True if user is patient or connect
 
 ### Supabase Clients
 
-- `src/utils/supabase/server.ts` - Server client for API routes (uses cookies)
-- `src/utils/supabase/client.ts` - Browser client
-- `src/utils/supabase/middleware.ts` - Middleware client with cookie propagation
+- `src/utils/supabase/server.ts` - Server client for API routes and Server Components (uses cookies)
+- `src/utils/supabase/client.ts` - Browser client for Client Components
+- `src/utils/supabase/session.ts` - Session refresh helpers for proxy.ts (cookie propagation)
 
 ### Zod Validation Schemas
 

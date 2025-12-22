@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +82,7 @@ export function CreateWeeklyPlanDialog({
       <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Crear Pauta Semanal</DialogTitle>
-          <p className="text-sm text-muted-foreground">Para: {patientName}</p>
+          <DialogDescription>Para: {patientName}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
