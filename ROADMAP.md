@@ -194,6 +194,22 @@ CREATE TABLE habit_logs (
 
 ---
 
+### 6. Botón de Creación Rápida en Vista Día
+
+Mejora UX para crear entradas desde la vista diaria del calendario.
+
+**Funcionalidad:**
+- Botón al final de la lista de entradas del día
+- Abre CreateEntryDialog con fecha pre-rellenada del día seleccionado
+- Reduce fricción: usuario no necesita cambiar la fecha manualmente
+- Texto contextual: "Agregar Entrada para [fecha]"
+
+**Ubicación:** Vista Día en `/dashboard/patient` (DayView component)
+
+**Estado:** ✅ Implementado
+
+---
+
 ## 📋 Orden de Implementación Sugerido
 
 | Fase | Funcionalidad | Complejidad | Dependencias |

@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SavedMealsDialog } from "@/components/saved-meals/SavedMealsDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { compressImage, formatFileSize, CompressionResult } from "@/lib/image-optimization";
+import { BookOpen } from "lucide-react";
 
 const formSchema = z.object({
   date: z.string(),
@@ -33,9 +35,10 @@ function getRoundedTime(): string {
 
 interface NutritionEntryFormProps {
   onSuccess?: () => void;
+  defaultDate?: Date;
 }
 
-export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
+export function NutritionEntryForm({ onSuccess, defaultDate }: NutritionEntryFormProps) {
   const { user, token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -46,7 +49,7 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date().toISOString().split("T")[0],
+      date: (defaultDate || new Date()).toISOString().split("T")[0],
       time: getRoundedTime(),
       mealType: "breakfast",
       description: "",
@@ -223,12 +226,32 @@ export function NutritionEntryForm({ onSuccess }: NutritionEntryFormProps) {
               <option value="lunch">Comida</option>
               <option value="afternoon-snack">Merienda</option>
               <option value="dinner">Cena</option>
+              <option value="pre-workout">Pre-Entreno</option>
+              <option value="post-workout">Post-Entreno</option>
               <option value="extra">Extra</option>
             </Select>
           </div>
 
           <div>
-            <label className="text-sm font-medium">Descripción</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium">Descripción</label>
+              <SavedMealsDialog
+                onSelect={(meal) => {
+                  form.setValue("description", meal.description || "");
+                }}
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5"
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    Usar comida guardada
+                  </Button>
+                }
+              />
+            </div>
             <Textarea
               placeholder="Describe qué comiste..."
               {...form.register("description")}

@@ -11,12 +11,9 @@ vi.mock('@/components/DashboardLayout', () => ({
     DashboardLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="dashboard-layout">{children}</div>,
 }));
 
-vi.mock('@/components/nutrition/NutritionEntryForm', () => ({
-    NutritionEntryForm: () => <div data-testid="nutrition-form">Nutrition Form Mock</div>,
-}));
-
-vi.mock('@/components/training/TrainingEntryForm', () => ({
-    TrainingEntryForm: () => <div data-testid="training-form">Training Form Mock</div>,
+vi.mock('@/components/diary/CreateEntryDialog', () => ({
+    CreateEntryDialog: ({ open }: { open: boolean }) =>
+        open ? <div data-testid="create-entry-dialog">Create Entry Dialog</div> : null,
 }));
 
 vi.mock('@/components/calendar/CalendarViewSelector', () => ({
@@ -51,22 +48,29 @@ describe('PatientDashboardPage', () => {
         expect(screen.getByTestId('month-view')).toBeInTheDocument();
     });
 
-    it('renders tabs and switches forms', async () => {
+    it('renders FAB button for creating entries', () => {
+        render(<PatientDashboardPage />);
+
+        // FAB button should be present (mobile)
+        const fabButton = screen.getByLabelText('Nueva entrada');
+        expect(fabButton).toBeInTheDocument();
+    });
+
+    it('opens dialog when FAB is clicked', async () => {
         const user = userEvent.setup();
         render(<PatientDashboardPage />);
-        // Default is Meal Form
-        expect(screen.getByTestId('nutrition-form')).toBeInTheDocument();
-        expect(screen.queryByTestId('training-form')).not.toBeInTheDocument();
 
-        // Switch to Training
-        // ShadCN Tabs use triggers. We look for text "Entreno".
-        const tabTrigger = screen.getByText('Entreno');
-        await user.click(tabTrigger);
+        // Dialog should not be visible initially
+        expect(screen.queryByTestId('create-entry-dialog')).not.toBeInTheDocument();
 
+        // Click FAB button
+        const fabButton = screen.getByLabelText('Nueva entrada');
+        await user.click(fabButton);
+
+        // Dialog should appear
         await waitFor(() => {
-            expect(screen.getByTestId('training-form')).toBeInTheDocument();
+            expect(screen.getByTestId('create-entry-dialog')).toBeInTheDocument();
         });
-        expect(screen.queryByTestId('nutrition-form')).not.toBeInTheDocument();
     });
 
     it('switches calendar views', () => {

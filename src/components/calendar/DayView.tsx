@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from "lucide-react";
 import { IconBadge } from "@/components/ui/icon-badge";
 import { format } from "date-fns";
@@ -28,6 +29,7 @@ import { EditMealDialog } from "@/components/nutrition/EditMealDialog";
 import { EditTrainingDialog } from "@/components/training/EditTrainingDialog";
 import { EntryDetailDialog } from "@/components/nutrition/EntryDetailDialog";
 import { TrainingDetailDialog } from "@/components/training/TrainingDetailDialog";
+import { CreateEntryDialog } from "@/components/diary/CreateEntryDialog";
 
 // Extended type that includes image_url from API response (signed URL)
 type NutritionImageWithUrl = Database["public"]["Tables"]["nutrition_images"]["Row"] & {
@@ -81,6 +83,8 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
   const [viewingEntry, setViewingEntry] = useState<NutritionEntry | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
   const [commentCounts, setCommentCounts] = useState<{ entries: Record<string, number>; sessions: Record<string, number> }>({ entries: {}, sessions: {} });
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [defaultTab, setDefaultTab] = useState<"meal" | "training">("meal");
 
   // Use date-fns format to get local date string (avoids UTC timezone issues)
   const dateString = format(selectedDate, "yyyy-MM-dd");
@@ -424,6 +428,29 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
           )}
         </div>
       )}
+
+      {/* Botón para Crear Nueva Entrada */}
+      {!readOnly && (
+        <div className="mt-6 text-center">
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Agregar Entrada para {format(selectedDate, "d 'de' MMMM", { locale: es })}
+          </Button>
+        </div>
+      )}
+
+      {/* Create Entry Dialog */}
+      <CreateEntryDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={refreshData}
+        defaultTab={defaultTab}
+        defaultDate={selectedDate}
+      />
 
       {/* Edit Dialogs */}
       {editingEntry && (

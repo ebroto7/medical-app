@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList } from "lucide-react";
+import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList, Plus, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { IconBadge } from "@/components/ui/icon-badge";
@@ -19,6 +19,19 @@ export function Sidebar({ role }: SidebarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const { signOut, token } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Helper: Determinar si el usuario es paciente
+  const isPatient = () => {
+    // Comparación case-insensitive para role
+    if (role?.toLowerCase() === 'patient') return true;
+
+    // Fallback: Si está en ruta /dashboard/patient/*, asumimos que es patient
+    // (el middleware ya validó su rol para permitir acceso)
+    if (pathname?.startsWith('/dashboard/patient')) return true;
+
+    return false;
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -66,6 +79,7 @@ export function Sidebar({ role }: SidebarProps) {
     } else {
       return [
         { label: "Mi Diario", icon: BookOpen, href: "/dashboard/patient", color: "green" as const },
+        { label: "Biblioteca de menús", icon: Library, href: "/dashboard/patient/saved-meals", color: "yellow" as const },
         { label: "Mis Pautas", icon: ClipboardList, href: "/dashboard/patient/meal-plans", color: "purple" as const },
         { label: "Nutricionistas", icon: Users, href: "/dashboard/patient/nutritionists", color: "blue" as const },
         { label: "Notificaciones", icon: Bell, href: "/dashboard/notifications", badge: unreadCount, color: "orange" as const },
@@ -93,9 +107,8 @@ export function Sidebar({ role }: SidebarProps) {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen bg-card border-r border-border z-50 transition-transform duration-300 ${
-          isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-64"
-        } md:static md:translate-x-0`}
+        className={`fixed left-0 top-0 h-screen bg-card border-r border-border z-50 transition-transform duration-300 ${isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-64"
+          } md:static md:translate-x-0`}
       >
         <div className="flex flex-col h-full p-4">
           {/* Header */}
@@ -116,6 +129,24 @@ export function Sidebar({ role }: SidebarProps) {
 
           {/* Menu */}
           <nav className="flex-1 space-y-1">
+            {/* Nueva Entrada Button - Patient Only */}
+            {isPatient() && (
+              <Button
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('openCreateEntryDialog', {
+                      detail: { defaultTab: 'meal' }
+                    })
+                  );
+                  if (isMobile) setIsOpen(false);
+                }}
+                className="w-full mb-4 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm font-medium"
+              >
+                <Plus className="h-5 w-5" />
+                Nueva Entrada
+              </Button>
+            )}
+
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -135,7 +166,7 @@ export function Sidebar({ role }: SidebarProps) {
                       </span>
                     )}
                   </div>
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium text-left">{item.label}</span>
                 </button>
               );
             })}
@@ -157,7 +188,7 @@ export function Sidebar({ role }: SidebarProps) {
       {isMobile && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 p-3 bg-foreground text-background rounded-full shadow-lg z-40 md:hidden hover:scale-105 transition-all duration-200"
+          className="fixed bottom-6 left-6 p-3 bg-foreground text-background rounded-full shadow-lg z-40 md:hidden hover:scale-105 transition-all duration-200"
         >
           <Menu size={24} />
         </button>

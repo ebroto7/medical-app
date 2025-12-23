@@ -4,7 +4,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mocks
@@ -14,6 +14,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 
 vi.mock('next/navigation', () => ({
     useRouter: vi.fn(),
+    usePathname: vi.fn(),
 }));
 
 // Mock ResizeObserver for responsiveness logic
@@ -36,6 +37,7 @@ describe('Sidebar', () => {
         (useRouter as any).mockReturnValue({
             push: mockPush,
         });
+        (usePathname as any).mockReturnValue('/dashboard/patient');
 
         // Mock global fetch with default success response to avoid useEffect errors
         global.fetch = vi.fn().mockResolvedValue({
@@ -98,7 +100,7 @@ describe('Sidebar', () => {
         render(<Sidebar role="patient" />);
 
         // Initially menu might be visible or hidden depending on initial state/effect?
-        // Based on code: useEffect sets isMobile. 
+        // Based on code: useEffect sets isMobile.
         // If mobile, checking if hamburger appears.
 
         // Note: Testing responsiveness with window.innerWidth in JSDOM can be tricky due to ResizeObserver logic
@@ -109,5 +111,75 @@ describe('Sidebar', () => {
 
         // Let's rely on basic rendering for now as responsive test is flaky without complex setup.
         expect(screen.getByText('NutriDiary')).toBeInTheDocument();
+    });
+
+    it('renders "Nueva Entrada" button for patient role', () => {
+        render(<Sidebar role="patient" />);
+
+        const newEntryButton = screen.getByText('Nueva Entrada');
+        expect(newEntryButton).toBeInTheDocument();
+    });
+
+    it('does NOT render "Nueva Entrada" button for nutritionist role', () => {
+        (usePathname as any).mockReturnValue('/dashboard/nutritionist');
+
+        render(<Sidebar role="nutritionist" />);
+
+        expect(screen.queryByText('Nueva Entrada')).not.toBeInTheDocument();
+    });
+
+    it('dispatches custom event when "Nueva Entrada" clicked', () => {
+        const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
+
+        render(<Sidebar role="patient" />);
+
+        const newEntryButton = screen.getByText('Nueva Entrada');
+        fireEvent.click(newEntryButton);
+
+        expect(dispatchEventSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'openCreateEntryDialog'
+            })
+        );
+    });
+
+    it('"Nueva Entrada" button has correct event detail', () => {
+        let capturedEvent: CustomEvent | null = null;
+
+        const eventListener = (e: Event) => {
+            capturedEvent = e as CustomEvent;
+        };
+
+        window.addEventListener('openCreateEntryDialog', eventListener);
+
+        render(<Sidebar role="patient" />);
+
+        const newEntryButton = screen.getByText('Nueva Entrada');
+        fireEvent.click(newEntryButton);
+
+        expect(capturedEvent).not.toBeNull();
+        expect(capturedEvent?.detail).toEqual({ defaultTab: 'meal' });
+
+        window.removeEventListener('openCreateEntryDialog', eventListener);
+    });
+
+    it('renders "Nueva Entrada" when in /dashboard/patient route even if role is null', () => {
+        (usePathname as any).mockReturnValue('/dashboard/patient');
+        (useAuth as any).mockReturnValue({
+            signOut: mockSignOut,
+            token: 'valid-token',
+        }); // role es undefined
+
+        render(<Sidebar role={null} />);
+
+        expect(screen.getByText('Nueva Entrada')).toBeInTheDocument();
+    });
+
+    it('renders "Nueva Entrada" with case-insensitive role check', () => {
+        (usePathname as any).mockReturnValue('/dashboard/other');
+
+        render(<Sidebar role="Patient" />); // Mayúscula
+
+        expect(screen.getByText('Nueva Entrada')).toBeInTheDocument();
     });
 });

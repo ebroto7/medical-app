@@ -10,9 +10,16 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
+import { SaveMealDialog } from "@/components/saved-meals/SaveMealDialog";
 import { Database } from "@/types/database";
-import { Utensils, Clock, MessageSquare, Send, Loader2 } from "lucide-react";
+import { Utensils, Clock, MessageSquare, Send, Loader2, BookmarkPlus } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -35,6 +42,8 @@ const mealTypeLabels: Record<string, string> = {
   lunch: "Comida",
   "afternoon-snack": "Merienda",
   dinner: "Cena",
+  "pre-workout": "Pre-Entreno",
+  "post-workout": "Post-Entreno",
   extra: "Extra",
 };
 
@@ -58,6 +67,7 @@ export function EntryDetailDialog({
   const [newComment, setNewComment] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMealDialogOpen, setSaveMealDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open && entry) {
@@ -122,26 +132,49 @@ export function EntryDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${colorScheme.bg} ${colorScheme.text}`}>
-                <Utensils className="h-5 w-5" />
-              </div>
-              <div>
-                <span className={colorScheme.textTitle}>
-                  {mealTypeLabels[entry.meal_type]}
-                </span>
-                <div className="text-sm font-normal text-muted-foreground flex items-center gap-2 mt-1">
-                  {format(new Date(entry.date), "EEEE, d 'de' MMMM", { locale: es })}
-                  {entry.time && (
-                    <>
-                      <span>•</span>
-                      <Clock className="h-3 w-3" />
-                      {entry.time.slice(0, 5)}
-                    </>
-                  )}
+            <div className="flex items-start justify-between gap-3">
+              <DialogTitle className="flex items-center gap-3 flex-1">
+                <div className={`p-2 rounded-lg ${colorScheme.bg} ${colorScheme.text}`}>
+                  <Utensils className="h-5 w-5" />
                 </div>
-              </div>
-            </DialogTitle>
+                <div>
+                  <span className={colorScheme.textTitle}>
+                    {mealTypeLabels[entry.meal_type]}
+                  </span>
+                  <div className="text-sm font-normal text-muted-foreground flex items-center gap-2 mt-1">
+                    {format(new Date(entry.date), "EEEE, d 'de' MMMM", { locale: es })}
+                    {entry.time && (
+                      <>
+                        <span>•</span>
+                        <Clock className="h-3 w-3" />
+                        {entry.time.slice(0, 5)}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </DialogTitle>
+
+              {/* Save to Library button (patient only) */}
+              {!isNutritionist && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setSaveMealDialogOpen(true)}
+                        className="shrink-0"
+                      >
+                        <BookmarkPlus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Agregar a biblioteca</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
@@ -258,6 +291,28 @@ export function EntryDetailDialog({
           onNavigate={setLightboxIndex}
         />
       )}
+
+      {/* Save Meal Dialog */}
+      <SaveMealDialog
+        open={saveMealDialogOpen}
+        onOpenChange={setSaveMealDialogOpen}
+        defaultValues={{
+          name: `${mealTypeLabels[entry.meal_type] || "Comida"} favorito`,
+          description: entry.description || "",
+          meal_type: entry.meal_type === 'mid-morning' ? 'morning_snack'
+                    : entry.meal_type === 'afternoon-snack' ? 'afternoon_snack'
+                    : entry.meal_type === 'pre-workout' ? 'pre_workout'
+                    : entry.meal_type === 'post-workout' ? 'post_workout'
+                    : entry.meal_type as any,
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+        }}
+        onSave={() => {
+          setSaveMealDialogOpen(false);
+        }}
+      />
     </>
   );
 }

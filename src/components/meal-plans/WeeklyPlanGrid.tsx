@@ -17,7 +17,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, X, Info, GripVertical, MoreHorizontal } from "lucide-react";
+import { Plus, X, Info, GripVertical, MoreHorizontal, Save, BookOpen } from "lucide-react";
 import {
     DAYS_OF_WEEK,
     PlanMealType,
@@ -377,57 +377,48 @@ export function WeeklyPlanGrid({
                                                                     )}
                                                                 </div>
                                                             ) : (
-                                                                <div className="space-y-1 group relative">
-                                                                    <Input
-                                                                        value={slot?.meal_name || ""}
-                                                                        onChange={(e) =>
-                                                                            updateSlot(
-                                                                                day.value,
-                                                                                type,
-                                                                                "meal_name",
-                                                                                e.target.value
-                                                                            )
-                                                                        }
-                                                                        className="h-8 text-sm bg-background"
-                                                                        placeholder="Nombre del plato"
-                                                                    />
-                                                                    {(slot?.meal_name || "")
-                                                                        .length > 0 && (
+                                                                <div className="space-y-1.5">
+                                                                    {/* Input Name with Info button */}
+                                                                    <div className="relative">
+                                                                        <Input
+                                                                            value={slot?.meal_name || ""}
+                                                                            onChange={(e) =>
+                                                                                updateSlot(
+                                                                                    day.value,
+                                                                                    type,
+                                                                                    "meal_name",
+                                                                                    e.target.value
+                                                                                )
+                                                                            }
+                                                                            className="h-8 text-sm bg-background"
+                                                                            placeholder="Nombre del plato"
+                                                                        />
+                                                                        {(slot?.meal_name || "").length > 0 && (
                                                                             <Popover>
                                                                                 <PopoverTrigger asChild>
                                                                                     <Button
                                                                                         variant="ghost"
                                                                                         size="icon"
                                                                                         className="h-5 w-5 absolute right-1 top-1.5 text-muted-foreground hover:bg-muted"
-                                                                                        title="Opciones del plato y Guardar"
+                                                                                        title="Detalles y macros"
                                                                                     >
-                                                                                        <MoreHorizontal className="h-3 w-3" />
+                                                                                        <Info className="h-3 w-3" />
                                                                                     </Button>
                                                                                 </PopoverTrigger>
                                                                                 <PopoverContent className="w-80 p-3">
                                                                                     <div className="space-y-3">
                                                                                         <h4 className="font-medium leading-none flex items-center gap-2">
-                                                                                            {
-                                                                                                PLAN_MEAL_TYPE_CONFIG[
-                                                                                                    type
-                                                                                                ].emoji
-                                                                                            }{" "}
-                                                                                            {day.label}
+                                                                                            {PLAN_MEAL_TYPE_CONFIG[type].emoji} {day.label}
                                                                                         </h4>
+
+                                                                                        {/* Descripción */}
                                                                                         <div className="space-y-2">
                                                                                             <label className="text-xs font-medium">
-                                                                                                Descripción
-                                                                                                /
-                                                                                                Ingredientes
+                                                                                                Descripción / Ingredientes
                                                                                             </label>
                                                                                             <Textarea
-                                                                                                value={
-                                                                                                    slot?.description ||
-                                                                                                    ""
-                                                                                                }
-                                                                                                onChange={(
-                                                                                                    e
-                                                                                                ) =>
+                                                                                                value={slot?.description || ""}
+                                                                                                onChange={(e) =>
                                                                                                     updateSlot(
                                                                                                         day.value,
                                                                                                         type,
@@ -439,6 +430,8 @@ export function WeeklyPlanGrid({
                                                                                                 placeholder="Detalles del plato..."
                                                                                             />
                                                                                         </div>
+
+                                                                                        {/* Macros Grid */}
                                                                                         <div className="grid grid-cols-4 gap-2">
                                                                                             <div>
                                                                                                 <label className="text-[10px] text-muted-foreground">Kcal</label>
@@ -469,35 +462,58 @@ export function WeeklyPlanGrid({
                                                                                                 />
                                                                                             </div>
                                                                                         </div>
-                                                                                        <div className="flex gap-2 pt-2 mt-2 border-t">
-                                                                                            <div className="flex-1">
-                                                                                                <SavedMealsDialog
-                                                                                                    onSelect={(meal) => updateSlotBatch(day.value, type, {
-                                                                                                        meal_name: meal.name,
-                                                                                                        description: meal.description || undefined,
-                                                                                                        calories: meal.calories || undefined,
-                                                                                                        protein: meal.protein || undefined,
-                                                                                                        carbs: meal.carbs || undefined,
-                                                                                                        fat: meal.fat || undefined
-                                                                                                    })}
-                                                                                                />
-                                                                                            </div>
-                                                                                            <SaveMealDialog
-                                                                                                defaultValues={{
-                                                                                                    name: slot?.meal_name || "",
-                                                                                                    description: slot?.description || "",
-                                                                                                    calories: slot?.calories,
-                                                                                                    protein: slot?.protein,
-                                                                                                    carbs: slot?.carbs,
-                                                                                                    fat: slot?.fat,
-                                                                                                    meal_type: type as any
-                                                                                                }}
-                                                                                            />
-                                                                                        </div>
                                                                                     </div>
                                                                                 </PopoverContent>
                                                                             </Popover>
                                                                         )}
+                                                                    </div>
+
+                                                                    {/* Botones de Saved Meals - VISIBLES INLINE */}
+                                                                    {(slot?.meal_name || "").length > 0 && (
+                                                                        <div className="flex gap-1.5 items-center">
+                                                                            <SavedMealsDialog
+                                                                                onSelect={(meal) => updateSlotBatch(day.value, type, {
+                                                                                    meal_name: meal.name,
+                                                                                    description: meal.description || undefined,
+                                                                                    calories: meal.calories || undefined,
+                                                                                    protein: meal.protein || undefined,
+                                                                                    carbs: meal.carbs || undefined,
+                                                                                    fat: meal.fat || undefined
+                                                                                })}
+                                                                                trigger={
+                                                                                    <Button
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="h-7 text-xs gap-1.5 flex-1"
+                                                                                    >
+                                                                                        <BookOpen className="h-3 w-3" />
+                                                                                        Reutilizar
+                                                                                    </Button>
+                                                                                }
+                                                                            />
+                                                                            <SaveMealDialog
+                                                                                defaultValues={{
+                                                                                    name: slot?.meal_name || "",
+                                                                                    description: slot?.description || "",
+                                                                                    calories: slot?.calories,
+                                                                                    protein: slot?.protein,
+                                                                                    carbs: slot?.carbs,
+                                                                                    fat: slot?.fat,
+                                                                                    meal_type: type as any
+                                                                                }}
+                                                                                trigger={
+                                                                                    <Button
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="h-7 text-xs gap-1.5 flex-1"
+                                                                                    >
+                                                                                        <Save className="h-3 w-3" />
+                                                                                        Guardar
+                                                                                    </Button>
+                                                                                }
+                                                                            />
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </TableCell>

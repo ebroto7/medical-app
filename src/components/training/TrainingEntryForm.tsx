@@ -33,16 +33,17 @@ function getRoundedTime(): string {
 
 interface TrainingEntryFormProps {
   onSuccess?: () => void;
+  defaultDate?: Date;
 }
 
-export function TrainingEntryForm({ onSuccess }: TrainingEntryFormProps) {
+export function TrainingEntryForm({ onSuccess, defaultDate }: TrainingEntryFormProps) {
   const { user, token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date().toISOString().split("T")[0],
+      date: (defaultDate || new Date()).toISOString().split("T")[0],
       time: getRoundedTime(),
       type: "cardio",
       durationMinutes: "",
