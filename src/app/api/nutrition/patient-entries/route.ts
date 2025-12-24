@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { requireAuth, requireRole, canAccessPatientData } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
 import { addSignedUrlsToEntries } from "@/lib/storage/signed-urls";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
     if (error instanceof RoleError) {
       return Response.json({ error: "Access denied: nutritionist role required" }, { status: 403 });
     }
-    console.error("Error fetching patient entries:", error);
+    logger.error({ error }, "Error fetching patient entries");
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Database } from "@/types/database";
+import { logger } from "@/lib/logger";
 
 export async function DELETE(
   request: Request,
@@ -61,8 +62,11 @@ export async function DELETE(
     if (image.storage_path) {
       try {
         await supabase.storage.from("nutrition-images").remove([image.storage_path]);
-      } catch {
-        console.error("Failed to delete from storage");
+      } catch (storageError) {
+        logger.error(
+          { error: storageError, imagePath: image.storage_path },
+          "Failed to delete image from storage"
+        );
       }
     }
 

@@ -3,6 +3,7 @@ import { Database } from "@/types/database";
 import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
 import { rateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -120,8 +121,8 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      console.error("Error inserting request:", insertError);
-      return Response.json({ error: insertError.message }, { status: 500 });
+      logger.error({ error: insertError }, "Failed to create nutritionist request");
+      return Response.json({ error: "Failed to create request" }, { status: 500 });
     }
 
     return Response.json({

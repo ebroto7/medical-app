@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
 import { rateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -73,7 +74,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    console.error("Update saved meal error:", error);
+    logger.error({ error }, "Failed to update saved meal");
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -126,7 +127,7 @@ export async function DELETE(
     if (error instanceof AuthenticationError) {
       return Response.json({ error: error.message }, { status: 401 });
     }
-    console.error("Delete saved meal error:", error);
+    logger.error({ error }, "Failed to delete saved meal");
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

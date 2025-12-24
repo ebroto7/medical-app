@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Database } from "@/types/database";
 import { rateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+import { fileTypeFromBuffer } from "file-type";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -66,10 +68,30 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate file type
+    // Validate file type (declared MIME type)
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return Response.json(
         { error: "Only JPEG, PNG, and WebP images are allowed" },
+        { status: 400 }
+      );
+    }
+
+    // Verify actual file content using magic numbers
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const fileType = await fileTypeFromBuffer(buffer);
+
+    if (!fileType || !ALLOWED_MIME_TYPES.includes(fileType.mime)) {
+      logger.warn(
+        {
+          declaredType: file.type,
+          actualType: fileType?.mime || "unknown",
+          fileName: file.name,
+        },
+        "File type mismatch detected - possible malicious upload attempt"
+      );
+      return Response.json(
+        { error: "Invalid file format. File content does not match declared type." },
         { status: 400 }
       );
     }
@@ -99,11 +121,7 @@ export async function POST(request: Request) {
     const filename = `${timestamp}-${randomStr}-${sanitizedName}`;
     const filePath = `${user.id}/${entryId}/${filename}`;
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Upload to storage
+    // Upload to storage (buffer already created for magic number verification)
     const { error: storageError } = await supabase.storage
       .from("nutrition-images")
       .upload(filePath, buffer, {
@@ -142,7 +160,7 @@ export async function POST(request: Request) {
       },
     }, { status: 201 });
   } catch (error) {
-    console.error("Upload error:", error);
+    logger.error({ error }, "Image upload failed");
     return Response.json(
       { error: "Internal server error" },
       { status: 500 }
