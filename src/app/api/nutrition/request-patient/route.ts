@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database";
 import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -11,31 +12,47 @@ const requestPatientSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    // 1. Require authentication
+    // 1. Apply strict rate limiting (3 requests per minute)
+    const rateLimitResult = rateLimit(request, 'strict');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const nutritionist = await requireAuth();
 
-    // 2. Require nutritionist role
+    // 3. Require nutritionist role
     await requireRole(nutritionist.id, ["nutritionist"]);
 
-    // 3. Validate body
+    // 4. Validate body
     const body = await request.json();
     const { patientEmail } = requestPatientSchema.parse(body);
 
-    // Admin client for listing users (requires service role key)
+    // Admin client (requires service role key)
     const supabaseAdmin = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 4. Find patient by email using admin client
+    // 5. Find patient by email using admin client
+    // Note: Using listUsers is O(n) but we mitigate with:
+    // - Strict rate limiting (3 req/min) to prevent enumeration attacks
+    // - Generic error messages (no specific "user not found" vs "not a patient")
     const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
     const patient = users?.find(u => u.email?.toLowerCase() === patientEmail.toLowerCase());
 
+    // Use generic error messages to prevent email enumeration
     if (!patient) {
-      return Response.json({ error: "Patient not found" }, { status: 404 });
+      return Response.json(
+        { error: "Unable to send connection request" },
+        { status: 400 }
+      );
     }
 
-    // 5. Check if patient has a profile with patient role
+    // 6. Check if patient has a profile with patient role
     const { data: patientProfile } = await supabaseAdmin
       .from("profiles")
       .select("role")
@@ -43,10 +60,13 @@ export async function POST(request: Request) {
       .single();
 
     if (!patientProfile || patientProfile.role !== "patient") {
-      return Response.json({ error: "User is not a patient" }, { status: 400 });
+      return Response.json(
+        { error: "Unable to send connection request" },
+        { status: 400 }
+      );
     }
 
-    // 6. Check if patient already has a nutritionist connected
+    // 7. Check if patient already has a nutritionist connected
     const { data: existingConnections } = await supabaseAdmin
       .from("patient_nutritionist_connections")
       .select("nutritionist_id")
@@ -71,7 +91,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 7. Check if a request already exists (pending or accepted)
+    // 8. Check if a request already exists (pending or accepted)
     const { data: existingRequest } = await supabaseAdmin
       .from("nutritionist_requests")
       .select("id, status")
@@ -88,7 +108,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 8. Create the request
+    // 9. Create the request
     const { data: requestData, error: insertError } = await supabaseAdmin
       .from("nutritionist_requests")
       .insert({

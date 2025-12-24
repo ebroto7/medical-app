@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -10,17 +11,26 @@ const acceptRequestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    // 1. Require authentication
+    // 1. Apply rate limiting
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const user = await requireAuth();
 
-    // 2. Require patient role
+    // 3. Require patient role
     await requireRole(user.id, ["patient"]);
 
-    // 3. Validate body
+    // 4. Validate body
     const body = await request.json();
     const { requestId } = acceptRequestSchema.parse(body);
 
-    // 4. Verify request belongs to this patient
+    // 5. Verify request belongs to this patient
     const supabase = await createClient();
     const { data: requestData } = await supabase
       .from("nutritionist_requests")
@@ -32,7 +42,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Request not found or unauthorized" }, { status: 403 });
     }
 
-    // 4. Check if patient already has a nutritionist
+    // 6. Check if patient already has a nutritionist
     const { data: existingConnections } = await supabase
       .from("patient_nutritionist_connections")
       .select("nutritionist_id")
@@ -48,7 +58,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Accept request and create connection
+    // 7. Accept request and create connection
     await supabase
       .from("nutritionist_requests")
       .update({ status: "accepted" })

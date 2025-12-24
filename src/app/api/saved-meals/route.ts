@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -43,6 +44,14 @@ export async function GET(request: Request) {
 // POST - Create saved meal
 export async function POST(request: Request) {
   try {
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const body = await request.json();
     const validatedData = createSavedMealSchema.parse(body);

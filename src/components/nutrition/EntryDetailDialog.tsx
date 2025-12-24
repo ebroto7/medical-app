@@ -299,11 +299,7 @@ export function EntryDetailDialog({
         defaultValues={{
           name: `${mealTypeLabels[entry.meal_type] || "Comida"} favorito`,
           description: entry.description || "",
-          meal_type: entry.meal_type === 'mid-morning' ? 'morning_snack'
-                    : entry.meal_type === 'afternoon-snack' ? 'afternoon_snack'
-                    : entry.meal_type === 'pre-workout' ? 'pre_workout'
-                    : entry.meal_type === 'post-workout' ? 'post_workout'
-                    : entry.meal_type as any,
+          meal_type: entry.meal_type as any, // Type compatibility - saved_meals has extended meal types
           calories: 0,
           protein: 0,
           carbs: 0,

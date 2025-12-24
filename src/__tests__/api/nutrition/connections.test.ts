@@ -130,7 +130,7 @@ describe('Connections API', () => {
             });
 
             const response = await REQUEST_PATIENT(request);
-            expect(response.status).toBe(404);
+            expect(response.status).toBe(400); // Changed from 404 to prevent user enumeration
         });
     });
 

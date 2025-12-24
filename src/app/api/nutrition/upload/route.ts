@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Database } from "@/types/database";
+import { rateLimit } from "@/lib/rate-limit";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -13,6 +14,15 @@ function sanitizeFilename(filename: string): string {
 
 export async function POST(request: Request) {
   try {
+    // Apply strict rate limiting (3 uploads per minute)
+    const rateLimitResult = rateLimit(request, 'strict');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Too many upload requests. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const cookieStore = await cookies();
     const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

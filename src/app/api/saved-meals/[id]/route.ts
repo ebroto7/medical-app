@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -20,6 +21,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const { id } = await params;
     const body = await request.json();
@@ -75,6 +84,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const { id } = await params;
 

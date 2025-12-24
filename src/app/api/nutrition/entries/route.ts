@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { createNutritionEntrySchema } from "@/lib/validations/nutrition";
 import { addSignedUrlsToEntries } from "@/lib/storage/signed-urls";
 import { getPaginationRange, createPaginatedResponse } from "@/lib/pagination";
@@ -66,14 +67,23 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // 1. Require authentication
+    // 1. Apply rate limiting
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const user = await requireAuth();
 
-    // 2. Parse and validate body
+    // 3. Parse and validate body
     const body = await request.json();
     const validatedData = createNutritionEntrySchema.parse(body);
 
-    // 3. Insert entry
+    // 4. Insert entry
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("nutrition_entries")

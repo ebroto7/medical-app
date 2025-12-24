@@ -18,11 +18,27 @@ export async function DELETE(request: Request) {
     const { otherUserId } = disconnectSchema.parse(body);
 
     // 3. Delete connection (works for both patient and nutritionist)
+    // Using two separate queries to avoid SQL injection via string interpolation
     const supabase = await createClient();
-    await supabase
+
+    // Try deleting where current user is patient
+    const { error: error1 } = await supabase
       .from("patient_nutritionist_connections")
       .delete()
-      .or(`and(patient_id.eq.${user.id},nutritionist_id.eq.${otherUserId}),and(nutritionist_id.eq.${user.id},patient_id.eq.${otherUserId})`);
+      .eq('patient_id', user.id)
+      .eq('nutritionist_id', otherUserId);
+
+    // Try deleting where current user is nutritionist
+    const { error: error2 } = await supabase
+      .from("patient_nutritionist_connections")
+      .delete()
+      .eq('nutritionist_id', user.id)
+      .eq('patient_id', otherUserId);
+
+    // At least one should succeed (or both if bidirectional connection exists)
+    if (error1 && error2) {
+      throw new Error('Failed to disconnect');
+    }
 
     return Response.json({ success: true, message: "Disconnected" }, { status: 200 });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth, requireRole, canAccessPatientData } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { createCommentSchema, updateCommentSchema } from "@/lib/validations/comments";
 import { ZodError } from "zod";
 
@@ -103,13 +104,22 @@ export async function GET(request: Request) {
 // POST - Create a new comment (nutritionist only)
 export async function POST(request: Request) {
   try {
-    // 1. Require authentication
+    // 1. Apply rate limiting
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const user = await requireAuth();
 
-    // 2. Require nutritionist role
+    // 3. Require nutritionist role
     await requireRole(user.id, ["nutritionist"]);
 
-    // 3. Parse and validate body
+    // 4. Parse and validate body
     const body = await request.json();
     // Map snake_case from request to camelCase for validation
     const mappedBody = {

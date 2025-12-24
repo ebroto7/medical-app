@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { addSignedUrlsToEntries } from "@/lib/storage/signed-urls";
 import { updateNutritionEntrySchema } from "@/lib/validations/nutrition";
 import { ZodError } from "zod";
@@ -53,15 +54,24 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 1. Require authentication
+    // 1. Apply rate limiting
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const user = await requireAuth();
 
-    // 2. Parse and validate body with Zod
+    // 3. Parse and validate body with Zod
     const body = await request.json();
     const validatedData = updateNutritionEntrySchema.parse(body);
     const { id } = await params;
 
-    // 3. Verify ownership
+    // 4. Verify ownership
     const supabase = await createClient();
 
     // Debug tracer for ownership check
@@ -128,12 +138,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 1. Require authentication
+    // 1. Apply rate limiting
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const user = await requireAuth();
 
     const { id } = await params;
 
-    // 2. Verify ownership
+    // 3. Verify ownership
     const supabase = await createClient();
     const { data: existingEntry } = await supabase
       .from("nutrition_entries")

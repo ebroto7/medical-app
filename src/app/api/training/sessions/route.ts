@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
 import { createTrainingSessionSchema } from "@/lib/validations/training";
 import { ZodError } from "zod";
 
@@ -47,14 +48,23 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // 1. Require authentication
+    // 1. Apply rate limiting
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const user = await requireAuth();
 
-    // 2. Parse and validate body with Zod
+    // 3. Parse and validate body with Zod
     const body = await request.json();
     const validatedData = createTrainingSessionSchema.parse(body);
 
-    // 3. Insert session
+    // 4. Insert session
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("training_sessions")
@@ -89,10 +99,19 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    // 1. Require authentication
+    // 1. Apply rate limiting
+    const rateLimitResult = rateLimit(request, 'api');
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
+    // 2. Require authentication
     const user = await requireAuth();
 
-    // 2. Get session ID
+    // 3. Get session ID
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -100,7 +119,7 @@ export async function DELETE(request: Request) {
       return Response.json({ error: "Missing session id" }, { status: 400 });
     }
 
-    // 3. Delete session (only own sessions via user_id check)
+    // 4. Delete session (only own sessions via user_id check)
     const supabase = await createClient();
     const { error } = await supabase
       .from("training_sessions")
