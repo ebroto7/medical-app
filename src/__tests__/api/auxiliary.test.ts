@@ -26,6 +26,22 @@ vi.mock('@/lib/auth/api-helpers', () => ({
     canAccessPatientData: vi.fn(),
 }));
 
+vi.mock('@/lib/rate-limit', () => ({
+    rateLimit: vi.fn(() => ({ success: true, headers: {} })),
+}));
+
+vi.mock('@/services/audit.service', () => ({
+    auditSuccess: vi.fn(),
+}));
+
+vi.mock('@/lib/logger', () => ({
+    logger: {
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+    },
+}));
+
 describe('Auxiliary APIs', () => {
     let mockSupabaseServer: any; // For app/api logic
     let mockSupabaseJS: any;     // For health check

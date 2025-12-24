@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 import rateLimit from '@/lib/rate-limit';
 import { signupSchema } from '@/lib/validation/auth';
+import { createAuditLog, getClientInfo } from '@/services/audit.service';
 import { ZodError } from 'zod';
 import { logger } from '@/lib/logger';
 
@@ -126,6 +127,17 @@ export async function POST(req: Request) {
     // ============================================
     // SUCCESS
     // ============================================
+
+    // Audit log the signup
+    const clientInfo = getClientInfo(req);
+    await createAuditLog({
+      userId: authData.user.id,
+      action: 'user.signup',
+      resourceType: 'user',
+      resourceId: authData.user.id,
+      details: { role, email },
+      ...clientInfo,
+    });
 
     return Response.json(
       {

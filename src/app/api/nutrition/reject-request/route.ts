@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
+import { auditSuccess } from "@/services/audit.service";
 import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { ZodError } from "zod";
@@ -47,6 +48,15 @@ export async function POST(request: Request) {
       .from("nutritionist_requests")
       .update({ status: "rejected" })
       .eq("id", requestId);
+
+    // Audit log the rejection
+    await auditSuccess(
+      request,
+      user.id,
+      "connection.reject",
+      "nutritionist_request",
+      requestId
+    );
 
     return Response.json({ success: true, message: "Rejected" }, { status: 200 });
   } catch (error) {

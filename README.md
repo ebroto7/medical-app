@@ -1,14 +1,16 @@
 # NutriDiary - Medical App
 
-Aplicación de gestión nutricional que conecta pacientes con nutricionistas.
+Aplicación de gestión nutricional que conecta pacientes con nutricionistas, construida con estándares de seguridad enterprise.
 
 ## 🚀 Stack Tecnológico
 
 - **Frontend**: Next.js 16, React 19, TypeScript
 - **Styling**: Tailwind CSS 3 + ShadCN/UI
-- **Backend**: Supabase (Auth, PostgreSQL, Storage)
+- **Backend**: Supabase (Auth, PostgreSQL, Storage, Row Level Security)
 - **Validación**: Zod + React Hook Form
-- **Testing**: Vitest
+- **Testing**: Vitest (unit) + Playwright (E2E)
+- **Logging**: Pino (structured logging with PII redaction)
+- **Rate Limiting**: Upstash Redis (production) + In-memory (development)
 
 ## 📋 Requisitos Previos
 
@@ -35,6 +37,8 @@ cp .env.example .env.local
 
 Crea un archivo `.env.local` con las siguientes variables:
 
+### Desarrollo (Mínimas Requeridas)
+
 ```env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
@@ -42,7 +46,20 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
 SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key
 ```
 
+### Producción (Recomendadas Adicionales)
+
+```env
+# Distributed Rate Limiting (Upstash Redis)
+UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-token
+
+# Logging Level
+LOG_LEVEL=info  # dev: debug, prod: info/warn/error
+```
+
 > ⚠️ La aplicación validará automáticamente estas variables al iniciar. Si falta alguna, verás un mensaje de error claro.
+>
+> 💡 Sin Upstash configurado, la app utilizará rate limiting in-memory (funcional pero no escalable en multi-instancia).
 
 ## 🏃 Comandos
 
@@ -73,24 +90,34 @@ npm run lint
 
 ```
 src/
-├── app/              # App Router (páginas y API routes)
-│   ├── api/          # API endpoints
-│   ├── auth/         # Páginas de autenticación
-│   ├── dashboard/    # Dashboards por rol
-│   └── diary/        # Diario nutricional
-├── components/       # Componentes React
-│   ├── ui/           # ShadCN componentes base
-│   ├── nutrition/    # Componentes de nutrición
-│   └── training/     # Componentes de entrenamiento
-├── lib/              # Utilidades y configuración
-│   ├── auth/         # Helpers de autenticación
-│   ├── validations/  # Schemas Zod
-│   └── env.ts        # Validación de env vars
-├── services/         # Servicios de negocio
-│   └── auth/         # Servicios de autorización
-├── contexts/         # React Contexts
-├── hooks/            # Custom hooks
-└── types/            # TypeScript types
+├── app/                   # App Router (páginas y API routes)
+│   ├── api/               # 31 API endpoints (todos con auth + rate limiting)
+│   ├── auth/              # Páginas de autenticación
+│   └── dashboard/         # Dashboards por rol (patient, nutritionist)
+├── components/            # Componentes React
+│   ├── ui/                # ShadCN componentes base
+│   ├── nutrition/         # Componentes de nutrición
+│   ├── training/          # Componentes de entrenamiento
+│   └── meal-plans/        # Gestión de planes de comida
+├── lib/                   # Utilidades y configuración
+│   ├── auth/              # Helpers de autenticación y autorización
+│   ├── validations/       # Schemas Zod (nutrition, training, auth)
+│   ├── rate-limit.ts      # Rate limiting in-memory (dev)
+│   ├── rate-limit-distributed.ts  # Upstash Redis rate limiting (prod)
+│   ├── csrf.ts            # CSRF protection
+│   ├── logger.ts          # Pino structured logging
+│   └── env.ts             # Validación de env vars
+├── services/              # Servicios de negocio
+│   ├── auth/              # AuthService, RoleService, AuthorizationService
+│   └── audit.service.ts   # Audit logging centralizado
+├── contexts/              # React Contexts (AuthContext con timeout recovery)
+├── hooks/                 # Custom hooks
+├── types/                 # TypeScript types
+└── proxy.ts               # Next.js 16 session refresh proxy
+
+supabase/migrations/       # Database migrations con RLS
+.claude/skills/            # Claude Code skills para desarrollo
+CLAUDE.md                  # Documentación completa de arquitectura
 ```
 
 ## 👥 Roles de Usuario
@@ -100,34 +127,118 @@ src/
 | **patient** | Registra comidas, entrenamientos y ve planes de comida |
 | **nutritionist** | Gestiona pacientes, crea planes de comida, comenta entradas |
 
-## 🔐 Seguridad
+## 🔐 Seguridad (Enterprise-Grade)
 
-- **Rate Limiting**: Endpoints de auth protegidos (5 req/min)
-- **Validación de env**: La app falla al iniciar si faltan variables
-- **RBAC**: Control de acceso basado en roles en middleware y API
-- **Logging**: Logging estructurado con Pino para monitoreo
-- **RLS**: Row Level Security en Supabase
+NutriDiary implementa múltiples capas de seguridad siguiendo las mejores prácticas OWASP:
 
-Ver [docs/SECURITY.md](docs/SECURITY.md) para más detalles.
+### Autenticación & Autorización
+- ✅ **Authentication**: Supabase Auth con tokens JWT
+- ✅ **Authorization**: RBAC con verificación en cada endpoint
+- ✅ **Row Level Security**: Políticas RLS en todas las tablas
+- ✅ **Session Management**: Refresh automático con timeout recovery
 
-## 📡 API y Paginación
+### Rate Limiting (3 niveles)
+- **Strict** (3 req/min): Uploads, deletions, connection requests
+- **Auth** (5 req/min): Signup, login, password reset
+- **API** (100 req/min): CRUD operations
+- **Producción**: Upstash Redis (distributed, multi-instance)
+- **Desarrollo**: In-memory fallback
 
-La API soporta paginación estándar:
-`GET /api/nutrition/entries?page=1&limit=20`
+### Validación & Sanitización
+- ✅ **Input Validation**: Zod schemas en todos los endpoints
+- ✅ **SQL Injection Prevention**: Queries parametrizadas (no string interpolation)
+- ✅ **Error Sanitization**: Mensajes genéricos (sin PII, sin detalles de BD)
+- ✅ **File Upload**: Magic number verification + MIME type + size limit
 
-Ver [docs/API.md](docs/API.md) para documentación completa de endpoints.
+### Audit & Logging
+- ✅ **Audit Trail**: Tabla `audit_log` con 20+ action types
+- ✅ **Structured Logging**: Pino con redacción automática de PII
+- ✅ **Client Tracking**: IP address, User-Agent en audit logs
+- ✅ **Non-blocking**: Fallos de logging no rompen la app
+
+### Protecciones Adicionales
+- ✅ **CSRF Protection**: Tokens para operaciones sensibles
+- ✅ **Security Headers**: CSP, HSTS, X-Frame-Options, etc.
+- ✅ **Password Policy**: 12+ chars, uppercase, lowercase, number, special
+- ✅ **User Enumeration Prevention**: Mensajes genéricos de error
+
+### Compliance
+- **HIPAA-ready**: Audit logging + PII redaction
+- **GDPR-compliant**: User can view own audit logs
+- **SOC 2 ready**: Comprehensive logging and access controls
+
+📖 **Documentación completa**: Ver [CLAUDE.md](CLAUDE.md#security-infrastructure) para detalles técnicos
+
+## 📡 API
+
+31 endpoints REST completamente documentados con:
+- ✅ Rate limiting en TODOS los endpoints
+- ✅ Autenticación requerida
+- ✅ Validación Zod de inputs
+- ✅ Audit logging en operaciones sensibles
+- ✅ Paginación estándar: `?limit=20&offset=0`
+
+**Patrones de endpoints**:
+- `/api/nutrition/*` - Entradas nutricionales, imágenes, conexiones
+- `/api/training/*` - Sesiones de entrenamiento
+- `/api/meal-plans/*` - Planes de comida (nutritionists)
+- `/api/comments/*` - Comentarios de nutricionistas
+- `/api/saved-meals/*` - Comidas favoritas guardadas
+
+📖 **Detalles**: Ver [CLAUDE.md](CLAUDE.md#api-route-pattern-security-first) para patrones y ejemplos
 
 ## 🧪 Testing
 
-Ver [docs/TESTING.md](docs/TESTING.md) para guía completa de testing.
+**Cobertura actual**: 195 tests pasando (31 test files)
 
 ```bash
 # Ejecutar todos los tests
 npm run test
 
+# Watch mode
+npm run test:watch
+
 # Ver cobertura
 npm run test:coverage
+
+# E2E tests
+npm run test:e2e
 ```
+
+**Testing pyramid**:
+- ✅ Unit tests: Componentes, hooks, utilities
+- ✅ Integration tests: API routes, servicios
+- ✅ E2E tests: Flujos críticos de usuario
+
+## 🤖 Claude Code Skills
+
+Este proyecto incluye skills personalizadas para Claude Code que mantienen las mejores prácticas:
+
+### Uso de Skills
+
+```bash
+# Revisar seguridad de un endpoint
+"Run security-review on src/app/api/nutrition/entries/route.ts"
+
+# Crear nuevo endpoint con mejores prácticas
+"Use create-api-endpoint to build a new notifications endpoint"
+```
+
+### Skills Disponibles
+
+1. **security-review** - Checklist completo de seguridad
+   - Rate limiting, auth, validation
+   - Logging, audit, error handling
+   - SQL injection, CSRF, file upload
+   - Pre-deployment checklist
+
+2. **create-api-endpoint** - Template interactivo para nuevos endpoints
+   - Gathering requirements
+   - Zod schema generation
+   - Complete route templates (GET, POST, PUT, DELETE)
+   - RLS policies, tests, verification
+
+📖 **Ver más**: `.claude/skills/README.md` para documentación completa de skills
 
 ## 📄 Licencia
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { auditSuccess } from "@/services/audit.service";
 import { z } from "zod";
 import { ZodError } from "zod";
 
@@ -39,6 +40,16 @@ export async function DELETE(request: Request) {
     if (error1 && error2) {
       throw new Error('Failed to disconnect');
     }
+
+    // Audit log the disconnection
+    await auditSuccess(
+      request,
+      user.id,
+      "connection.disconnect",
+      "patient_nutritionist_connection",
+      undefined,
+      { otherUserId }
+    );
 
     return Response.json({ success: true, message: "Disconnected" }, { status: 200 });
   } catch (error) {

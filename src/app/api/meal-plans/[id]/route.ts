@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth, requireRole } from "@/lib/auth/api-helpers";
 import { AuthenticationError, RoleError } from "@/lib/auth/errors";
+import { auditSuccess } from "@/services/audit.service";
 import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { ZodError } from "zod";
@@ -208,6 +209,16 @@ export async function DELETE(
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }
+
+    // Audit log the deletion
+    await auditSuccess(
+      request,
+      nutritionist.id,
+      "meal_plan.delete",
+      "meal_plan",
+      id,
+      { patientId: existingPlan.nutritionist_id }
+    );
 
     return Response.json({ success: true });
   } catch (error) {
