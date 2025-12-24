@@ -8,6 +8,7 @@ import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList, Plus, 
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { IconBadge } from "@/components/ui/icon-badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface SidebarProps {
   role?: string | null;
@@ -107,20 +108,20 @@ export function Sidebar({ role }: SidebarProps) {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-screen bg-card border-r border-border z-50 transition-transform duration-300 ${isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-64"
-          } md:static md:translate-x-0`}
+        className={`fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground border-r border-sidebar-border z-50 transition-transform duration-300 ${isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-64"
+          } md:static md:translate-x-0 shadow-lg`}
       >
         <div className="flex flex-col h-full p-4">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-border">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-sidebar-border">
             <Link href="/" className="flex items-center gap-3 group">
-              <Logo size="md" className="group-hover:text-primary transition-colors" />
-              <span className="text-xl font-logo text-foreground hidden sm:inline group-hover:text-primary transition-colors">NutriDiary</span>
+              <Logo size="md" className="group-hover:text-sidebar-primary transition-colors" />
+              <span className="text-xl font-logo text-sidebar-foreground hidden sm:inline group-hover:text-sidebar-primary transition-colors">NutriDiary</span>
             </Link>
             {isMobile && (
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-accent/10 rounded-lg transition-colors"
+                className="p-1 hover:bg-sidebar-accent rounded-lg transition-colors text-sidebar-accent-foreground"
               >
                 <X size={20} />
               </button>
@@ -140,7 +141,7 @@ export function Sidebar({ role }: SidebarProps) {
                   );
                   if (isMobile) setIsOpen(false);
                 }}
-                className="w-full mb-4 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm font-medium"
+                className="w-full mb-4 gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 shadow-md font-medium"
               >
                 <Plus className="h-5 w-5" />
                 Nueva Entrada
@@ -156,7 +157,7 @@ export function Sidebar({ role }: SidebarProps) {
                     router.push(item.href);
                     if (isMobile) setIsOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-foreground hover:bg-foreground/10 rounded-xl transition-all duration-200 active:scale-[0.98] group"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-xl transition-all duration-200 active:scale-[0.98] group"
                 >
                   <div className="relative flex-shrink-0">
                     <IconBadge icon={Icon} color={item.color} size="sm" />
@@ -172,15 +173,22 @@ export function Sidebar({ role }: SidebarProps) {
             })}
           </nav>
 
-          {/* Logout */}
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="w-full justify-start gap-3"
-          >
-            <LogOut size={20} />
-            Cerrar Sesión
-          </Button>
+          {/* Logout & Theme */}
+          <div className="space-y-2 mt-auto">
+            <div className="flex items-center justify-between px-2 py-2">
+              <span className="text-sm text-sidebar-foreground/60 font-medium">Tema</span>
+              <ThemeToggle />
+            </div>
+
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="w-full justify-start gap-3 border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <LogOut size={20} />
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -188,7 +196,7 @@ export function Sidebar({ role }: SidebarProps) {
       {isMobile && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 left-6 p-3 bg-foreground text-background rounded-full shadow-lg z-40 md:hidden hover:scale-105 transition-all duration-200"
+          className="fixed bottom-6 left-6 p-3 bg-sidebar-primary text-sidebar-primary-foreground rounded-full shadow-lg z-40 md:hidden hover:scale-105 transition-all duration-200"
         >
           <Menu size={24} />
         </button>

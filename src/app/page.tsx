@@ -21,6 +21,7 @@ import {
   Star,
   ChevronUp,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 
 // Features data
@@ -107,9 +108,8 @@ function FAQItem({
         </span>
         <ChevronUp
           size={24}
-          className={`text-primary flex-shrink-0 transition-transform duration-300 ${
-            !isOpen ? "rotate-180" : ""
-          }`}
+          className={`text-primary flex-shrink-0 transition-transform duration-300 ${!isOpen ? "rotate-180" : ""
+            }`}
         />
       </button>
       {isOpen && (
@@ -141,7 +141,7 @@ export default function Home() {
   // Initialize Lenis
   useEffect(() => {
     if (!isMounted || typeof window === 'undefined') return;
-    
+
     let lenis: Lenis;
     let rafId: number;
 
@@ -225,7 +225,7 @@ export default function Home() {
       ]);
       const gsap = gsapLib.default;
       const ScrollTrigger = ScrollTriggerLib.default;
-      
+
       gsap.registerPlugin(ScrollTrigger);
 
       const featureCards = gsap.utils.toArray("[data-feature-card]") as HTMLElement[];
@@ -267,7 +267,7 @@ export default function Home() {
       ]);
       const gsap = gsapLib.default;
       const ScrollTrigger = ScrollTriggerLib.default;
-      
+
       gsap.registerPlugin(ScrollTrigger);
 
       const testimonialCards = gsap.utils.toArray(
@@ -309,7 +309,7 @@ export default function Home() {
       ]);
       const gsap = gsapLib.default;
       const ScrollTrigger = ScrollTriggerLib.default;
-      
+
       gsap.registerPlugin(ScrollTrigger);
 
       const ctaSection = document.querySelector("[data-cta-section]");
@@ -502,8 +502,11 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center text-foreground/60">
-          <p>&copy; 2024 NutriDiary. Hecho con ❤️ para tu salud.</p>
+        <div className="max-w-7xl mx-auto flex flex-col items-center justify-between gap-6 sm:flex-row">
+          <div className="text-foreground/60 text-center sm:text-left">
+            <p>&copy; 2024 NutriDiary. Hecho con ❤️ para tu salud.</p>
+          </div>
+          <ThemeToggle />
         </div>
       </footer>
     </div>

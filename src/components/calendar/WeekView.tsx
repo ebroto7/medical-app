@@ -78,7 +78,7 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
     };
 
     fetchWeekData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, format(weekStart, "yyyy-MM-dd")]);
 
   const goToPreviousWeek = () => {
@@ -123,11 +123,11 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
             key={day.date.toISOString()}
             onClick={() => onDayClick(day.date)}
             className={`
-              p-3 rounded-lg text-center transition-all
+              p-3 rounded-2xl text-center transition-all duration-300
               ${isSelected(day.date)
-                ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2"
+                ? "bg-primary text-primary-foreground shadow-md scale-105"
                 : isToday(day.date)
-                  ? "bg-primary/10 hover:bg-primary/20"
+                  ? "bg-primary/10 hover:bg-primary/20 text-primary"
                   : "bg-card hover:bg-muted/50 border border-border"
               }
             `}
@@ -158,7 +158,7 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
                 </div>
               )}
             </div>
-            
+
             {day.meals === 0 && day.trainings === 0 && (
               <div className="h-5"></div>
             )}

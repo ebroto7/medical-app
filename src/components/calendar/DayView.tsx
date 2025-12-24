@@ -227,79 +227,79 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
   const renderMealCard = (entry: NutritionEntry) => {
     const isExtra = isExtraMeal(entry.meal_type);
     return (
-    <Card
-      className="cursor-pointer"
-      onClick={() => setViewingEntry(entry)}
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1">
-            <IconBadge
-              icon={Utensils}
-              color={isExtra ? "purple" : "green"}
-              size="md"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-foreground">
-                  {mealTypeLabels[entry.meal_type]}
-                </span>
-                {entry.time && (
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {formatTime(entry.time)}
+      <Card
+        className="cursor-pointer"
+        onClick={() => setViewingEntry(entry)}
+      >
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1">
+              <IconBadge
+                icon={Utensils}
+                color={isExtra ? "purple" : "green"}
+                size="md"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-foreground">
+                    {mealTypeLabels[entry.meal_type]}
                   </span>
-                )}
-                {commentCounts.entries[entry.id] > 0 && (
-                  <span className="text-sm text-accent-blue flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3" />
-                    {commentCounts.entries[entry.id]}
-                  </span>
-                )}
-              </div>
-              {entry.description && (
-                <p className="text-muted-foreground mt-1 text-sm line-clamp-2">{entry.description}</p>
-              )}
-              {entry.nutrition_images && entry.nutrition_images.length > 0 && (
-                <div className="flex gap-2 mt-3">
-                  {entry.nutrition_images.slice(0, 3).map((img) => (
-                    <div key={img.id} className="relative w-16 h-16 rounded-xl overflow-hidden shadow-sm">
-                      <Image src={img.image_url} alt="" fill className="object-cover" unoptimized />
-                    </div>
-                  ))}
-                  {entry.nutrition_images.length > 3 && (
-                    <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center text-sm font-medium text-muted-foreground">
-                      +{entry.nutrition_images.length - 3}
-                    </div>
+                  {entry.time && (
+                    <span className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatTime(entry.time)}
+                    </span>
+                  )}
+                  {commentCounts.entries[entry.id] > 0 && (
+                    <span className="text-sm text-accent-blue flex items-center gap-1">
+                      <MessageSquare className="h-3 w-3" />
+                      {commentCounts.entries[entry.id]}
+                    </span>
                   )}
                 </div>
-              )}
+                {entry.description && (
+                  <p className="text-muted-foreground mt-1 text-sm line-clamp-2">{entry.description}</p>
+                )}
+                {entry.nutrition_images && entry.nutrition_images.length > 0 && (
+                  <div className="flex gap-2 mt-3">
+                    {entry.nutrition_images.slice(0, 3).map((img) => (
+                      <div key={img.id} className="relative w-16 h-16 rounded-xl overflow-hidden shadow-sm">
+                        <Image src={img.image_url} alt="" fill className="object-cover" unoptimized />
+                      </div>
+                    ))}
+                    {entry.nutrition_images.length > 3 && (
+                      <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center text-sm font-medium text-muted-foreground">
+                        +{entry.nutrition_images.length - 3}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+            {!readOnly && (
+              <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditingEntry(entry)}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteEntry(entry.id)}
+                  className="h-8 w-8 text-accent-red hover:text-accent-red hover:bg-accent-red/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
-          {!readOnly && (
-            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditingEntry(entry)}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDeleteEntry(entry.id)}
-                className="h-8 w-8 text-accent-red hover:text-accent-red hover:bg-accent-red/10"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
         </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
   };
 
   const renderTrainingCard = (session: TrainingSession) => {
@@ -378,7 +378,7 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
   return (
     <div className="space-y-4">
       {/* Date Navigation */}
-      <div className="flex items-center justify-between bg-card rounded-2xl p-3 shadow-sm">
+      <div className="flex items-center justify-between bg-card rounded-3xl p-3 shadow-sm border border-border">
         <Button variant="ghost" size="icon" onClick={goToPreviousDay} className="h-9 w-9">
           <ChevronLeft className="h-5 w-5" />
         </Button>

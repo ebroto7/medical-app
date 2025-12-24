@@ -9,6 +9,8 @@ import {
   Knewave
 } from "next/font/google";
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 // Display font - for headings
 const archivoBlack = Archivo_Black({
   weight: "400",
@@ -54,12 +56,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full ${fontVariables}`}>
+    <html lang="en" className={`h-full ${fontVariables}`} suppressHydrationWarning>
       <body className="antialiased h-full min-h-screen bg-background">
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

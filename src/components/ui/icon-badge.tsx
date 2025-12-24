@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import { LucideIcon } from "lucide-react"
 
 const iconBadgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full transition-all duration-200 [&_svg]:stroke-[2.5]",
+  "inline-flex items-center justify-center rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 [&_svg]:stroke-[2]",
   {
     variants: {
       color: {
@@ -33,7 +33,7 @@ const iconBadgeVariants = cva(
 
 export interface IconBadgeProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "color">,
-    VariantProps<typeof iconBadgeVariants> {
+  VariantProps<typeof iconBadgeVariants> {
   icon: LucideIcon
 }
 

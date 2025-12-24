@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  format, 
-  isSameDay, 
+import {
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  format,
+  isSameDay,
   isSameMonth,
-  addMonths, 
+  addMonths,
   subMonths,
   startOfWeek,
   endOfWeek,
@@ -43,7 +43,7 @@ export function MonthView({ selectedDate, onDateChange, onDayClick }: MonthViewP
 
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
-  
+
   // Get calendar grid (including days from prev/next month to fill weeks)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
@@ -81,7 +81,7 @@ export function MonthView({ selectedDate, onDateChange, onDayClick }: MonthViewP
 
         // Build indicators map
         const indicatorMap: DayIndicators = {};
-        
+
         entries.forEach((e) => {
           if (!indicatorMap[e.date]) {
             indicatorMap[e.date] = { meals: 0, trainings: 0 };
@@ -140,7 +140,7 @@ export function MonthView({ selectedDate, onDateChange, onDayClick }: MonthViewP
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-card rounded-lg border border-border overflow-hidden">
+      <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
         {/* Week day headers */}
         <div className="grid grid-cols-7 bg-muted border-b border-border">
           {weekDays.map((day) => (
@@ -166,8 +166,8 @@ export function MonthView({ selectedDate, onDateChange, onDayClick }: MonthViewP
                 className={`
                   relative h-14 p-1 border-b border-r border-border/50
                   transition-colors
-                  ${!isCurrentMonth ? "bg-muted/50" : "bg-card hover:bg-muted/50"}
-                  ${isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : ""}
+                  ${!isCurrentMonth ? "bg-muted/50" : "bg-card hover:bg-muted/30"}
+                  ${isSelected ? "bg-primary/5 ring-2 ring-primary ring-inset" : ""}
                   ${index % 7 === 6 ? "border-r-0" : ""}
                 `}
               >
