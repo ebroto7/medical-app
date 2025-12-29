@@ -55,8 +55,8 @@ export default function PatientGPXPlansPage() {
   const formatSportType = (type: string) => {
     const types: Record<string, string> = {
       running: "Running",
+      trail_running: "Trail Running",
       cycling: "Ciclismo",
-      triathlon: "Triatlón",
       hiking: "Senderismo",
       other: "Otro",
     };

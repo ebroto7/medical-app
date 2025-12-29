@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ElevationChart } from "./ElevationChart";
+import { InteractiveMap } from "./InteractiveMap";
+import { MiniElevationChart } from "./MiniElevationChart";
 import { WaypointEditorDialog } from "./WaypointEditorDialog";
-import { Download, MapPin, TrendingUp, Mountain, Calendar, Activity, Loader2, Trash2, Plus } from "lucide-react";
+import { Download, MapPin, TrendingUp, Mountain, Calendar, Activity, Loader2, Trash2, Plus, Map } from "lucide-react";
 import type { GPXTrackPoint } from "@/lib/gpx/parser";
 
 interface GPXPlan {
@@ -66,12 +68,14 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
   const [selectedPoint, setSelectedPoint] = useState<GPXTrackPoint | null>(null);
   const [waypointDialogOpen, setWaypointDialogOpen] = useState(false);
 
-  // Load plan data and track points
-  useEffect(() => {
-    loadPlanData();
-  }, [planId]);
+  // Chart/Map sync state
+  const [hoverPoint, setHoverPoint] = useState<GPXTrackPoint | null>(null);
 
-  const loadPlanData = async () => {
+  // View toggle state
+  const [activeView, setActiveView] = useState<'map' | 'elevation'>('map');
+
+  // Load plan data and track points
+  const loadPlanData = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -120,24 +124,28 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [planId, token]);
 
-  const handlePointClick = (point: GPXTrackPoint) => {
+  useEffect(() => {
+    loadPlanData();
+  }, [loadPlanData]);
+
+  const handlePointClick = useCallback((point: GPXTrackPoint) => {
     setSelectedPoint(point);
     setWaypointDialogOpen(true);
-  };
+  }, []);
 
-  const handleCreateManualWaypoint = () => {
+  const handleCreateManualWaypoint = useCallback(() => {
     setSelectedPoint(null); // No pre-selected point
     setWaypointDialogOpen(true);
-  };
+  }, []);
 
-  const handleWaypointCreated = () => {
+  const handleWaypointCreated = useCallback(() => {
     // Reload waypoints
     loadPlanData();
-  };
+  }, [loadPlanData]);
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     if (!plan) return;
 
     setExporting(true);
@@ -168,9 +176,9 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
     } finally {
       setExporting(false);
     }
-  };
+  }, [plan, planId, token]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!confirm("¿Estás seguro de que quieres eliminar este plan? Esta acción no se puede deshacer.")) {
       return;
     }
@@ -195,9 +203,9 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       setError(err instanceof Error ? err.message : "Failed to delete plan");
       setDeleting(false);
     }
-  };
+  }, [planId, token, router]);
 
-  const formatSportType = (type: string) => {
+  const formatSportType = useCallback((type: string) => {
     const types: Record<string, string> = {
       running: "Running",
       cycling: "Ciclismo",
@@ -206,9 +214,9 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       other: "Otro",
     };
     return types[type] || type;
-  };
+  }, []);
 
-  const formatNutritionType = (type: string) => {
+  const formatNutritionType = useCallback((type: string) => {
     const types: Record<string, string> = {
       hydration: "Hidratación",
       isotonic_drink: "Bebida Isotónica",
@@ -219,7 +227,7 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       custom: "Personalizado",
     };
     return types[type] || type;
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -294,69 +302,130 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Distancia Total</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Distancia Total</CardTitle>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {plan.total_distance_km?.toFixed(2) || "0"} km
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Desnivel Positivo</CardTitle>
-            <Mountain className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Desnivel Positivo</CardTitle>
+            <div className="p-2 bg-green-50 rounded-lg">
+              <Mountain className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {plan.total_elevation_gain_m || 0} m
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Waypoints</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Waypoints</CardTitle>
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <MapPin className="h-4 w-4 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{waypoints.length}</div>
+            <div className="text-2xl font-bold text-gray-900">{waypoints.length}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Deporte</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Deporte</CardTitle>
+            <div className="p-2 bg-orange-50 rounded-lg">
+              <Activity className="h-4 w-4 text-orange-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatSportType(plan.sport_type)}</div>
+            <div className="text-2xl font-bold text-gray-900">{formatSportType(plan.sport_type)}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Elevation Chart */}
+      {/* View Toggle */}
+      {trackPoints.length > 0 && (
+        <div className="flex gap-2">
+          <Button
+            variant={activeView === 'map' ? 'default' : 'outline'}
+            onClick={() => setActiveView('map')}
+          >
+            <Map className="h-4 w-4 mr-2" /> Vista Mapa
+          </Button>
+          <Button
+            variant={activeView === 'elevation' ? 'default' : 'outline'}
+            onClick={() => setActiveView('elevation')}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" /> Vista Elevación
+          </Button>
+        </div>
+      )}
+
+      {/* Elevation Chart & Interactive Map */}
       {trackPoints.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Perfil de Elevación</CardTitle>
-            <CardDescription>
-              Haz click en el gráfico para agregar un waypoint nutricional
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ElevationChart
-              trackPoints={trackPoints}
-              waypoints={waypoints}
-              onPointClick={handlePointClick}
-              height={400}
-            />
-          </CardContent>
-        </Card>
+        activeView === 'map' ? (
+          <Card className="relative">
+            <CardHeader>
+              <CardTitle>Mapa Interactivo</CardTitle>
+              <CardDescription>
+                Visualización de la ruta con perfil de elevación
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="relative w-full" style={{ height: '600px' }}>
+                <InteractiveMap
+                  trackPoints={trackPoints}
+                  hoverPoint={hoverPoint}
+                  onHover={setHoverPoint}
+                  onPointClick={handlePointClick}
+                  height={600}
+                />
+
+                {/* Mini elevation chart overlay */}
+                <div className="absolute bottom-0 left-0 right-0 z-[450]">
+                  <MiniElevationChart
+                    trackPoints={trackPoints}
+                    waypoints={waypoints}
+                    hoverPoint={hoverPoint}
+                    onHover={setHoverPoint}
+                    height={120}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Perfil de Elevación</CardTitle>
+              <CardDescription>
+                Haz click en el gráfico para agregar un waypoint nutricional
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ElevationChart
+                trackPoints={trackPoints}
+                waypoints={waypoints}
+                onPointClick={handlePointClick}
+                onHover={setHoverPoint}
+                hoverPoint={hoverPoint}
+                height={600}
+              />
+            </CardContent>
+          </Card>
+        )
       ) : (
         <Card>
           <CardContent className="flex items-center justify-center min-h-[400px]">

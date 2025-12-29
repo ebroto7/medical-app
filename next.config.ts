@@ -59,9 +59,9 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
-              `img-src 'self' https://${supabaseUrl.hostname} data: blob:`,
+              `img-src 'self' https://${supabaseUrl.hostname} https://*.tile.openstreetmap.org data: blob:`,
               "font-src 'self' data:",
-              `connect-src 'self' https://${supabaseUrl.hostname} wss://${supabaseUrl.hostname} ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*`,
+              `connect-src 'self' https://${supabaseUrl.hostname} wss://${supabaseUrl.hostname} https://*.tile.openstreetmap.org ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*`,
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'"

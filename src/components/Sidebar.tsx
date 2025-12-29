@@ -110,7 +110,7 @@ export function Sidebar({ role }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-screen bg-sidebar text-sidebar-foreground border-r border-sidebar-border z-50 transition-transform duration-300 ${isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-64"
-          } md:static md:translate-x-0 shadow-lg`}
+          } md:sticky md:translate-x-0 shadow-lg`}
       >
         <div className="flex flex-col h-full p-4">
           {/* Header */}
