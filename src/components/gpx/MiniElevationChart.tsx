@@ -2,15 +2,8 @@
 
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, ReferenceLine, Tooltip } from 'recharts';
 import type { GPXTrackPoint } from '@/lib/gpx/parser';
-
-interface Waypoint {
-  id: string;
-  distance_from_start_km: number;
-  product_name?: string;
-  nutrition_type: string;
-  trigger_distance_km?: number;
-  trigger_time_min?: number;
-}
+import type { Waypoint } from '@/types/waypoint';
+import { isSpatialWaypoint } from '@/types/waypoint';
 
 interface MiniElevationChartProps {
   trackPoints: GPXTrackPoint[];
@@ -37,6 +30,7 @@ export function MiniElevationChart({
       lon: point.lon,
     }));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleMouseMove = (data: any) => {
     if (!onHover) return;
 
@@ -157,8 +151,8 @@ export function MiniElevationChart({
             />
           )}
 
-          {/* Waypoint markers (minimal) */}
-          {waypoints.map((wp, idx) => (
+          {/* Waypoint markers (minimal - only spatial waypoints) */}
+          {waypoints.filter(isSpatialWaypoint).map((wp, idx) => (
             <ReferenceLine
               key={wp.id || idx}
               x={parseFloat((wp.distance_from_start_km || 0).toFixed(2))}

@@ -2,15 +2,8 @@
 
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import type { GPXTrackPoint } from '@/lib/gpx/parser';
-
-interface Waypoint {
-  id: string;
-  distance_from_start_km: number;
-  product_name?: string;
-  nutrition_type: string;
-  trigger_distance_km?: number;
-  trigger_time_min?: number;
-}
+import type { Waypoint } from '@/types/waypoint';
+import { isSpatialWaypoint } from '@/types/waypoint';
 
 interface ElevationChartProps {
   trackPoints: GPXTrackPoint[];
@@ -40,6 +33,7 @@ export function ElevationChart({
       lon: point.lon,
     }));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleClick = (data: any) => {
     if (onPointClick && data && data.activePayload && data.activePayload[0]) {
       const payload = data.activePayload[0].payload;
@@ -52,6 +46,7 @@ export function ElevationChart({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleMouseMove = (data: any) => {
     if (!onHover) return;
 
@@ -171,8 +166,8 @@ export function ElevationChart({
             strokeWidth={2.5}
           />
 
-          {/* Waypoint markers */}
-          {waypoints.map((wp, idx) => {
+          {/* Waypoint markers (only spatial waypoints) */}
+          {waypoints.filter(isSpatialWaypoint).map((wp, idx) => {
             const label = wp.product_name || wp.nutrition_type;
             const triggers = [];
             if (wp.trigger_distance_km) triggers.push(`KM ${wp.trigger_distance_km}`);

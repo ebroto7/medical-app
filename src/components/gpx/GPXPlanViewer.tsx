@@ -8,9 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ElevationChart } from "./ElevationChart";
 import { InteractiveMap } from "./InteractiveMap";
 import { MiniElevationChart } from "./MiniElevationChart";
+import { TemporalTimeline } from "./TemporalTimeline";
 import { WaypointEditorDialog } from "./WaypointEditorDialog";
 import { Download, MapPin, TrendingUp, Mountain, Calendar, Activity, Loader2, Trash2, Plus, Map } from "lucide-react";
 import type { GPXTrackPoint } from "@/lib/gpx/parser";
+import type { Waypoint } from "@/types/waypoint";
 
 interface GPXPlan {
   id: string;
@@ -24,27 +26,6 @@ interface GPXPlan {
   event_name?: string;
   sport_type: string;
   created_at: string;
-}
-
-interface Waypoint {
-  id: string;
-  latitude: number;
-  longitude: number;
-  elevation_m?: number;
-  distance_from_start_km: number;
-  trigger_distance_km?: number;
-  trigger_time_min?: number;
-  nutrition_type: string;
-  product_name?: string;
-  calories?: number;
-  carbs?: number;
-  protein?: number;
-  fat?: number;
-  sodium_mg?: number;
-  caffeine_mg?: number;
-  quantity?: number;
-  quantity_unit?: string;
-  notes?: string;
 }
 
 interface GPXPlanViewerProps {
@@ -438,6 +419,16 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Temporal Timeline (for time-based waypoints) */}
+      <TemporalTimeline
+        waypoints={waypoints}
+        totalDuration={plan.estimated_duration_minutes || 240}
+        onWaypointClick={(waypoint) => {
+          // TODO: Open edit dialog for this waypoint
+          console.log('Timeline waypoint clicked:', waypoint);
+        }}
+      />
 
       {/* Waypoints List */}
       <Card>

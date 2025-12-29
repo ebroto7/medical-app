@@ -92,13 +92,15 @@ export function WaypointEditorDialog({
 
     try {
       const waypointData = {
+        type: 'spatial' as const,  // Currently only creates spatial waypoints
         // If selectedPoint exists, use its coordinates; otherwise use placeholder
         latitude: selectedPoint?.lat || 0,
         longitude: selectedPoint?.lon || 0,
         elevation_m: selectedPoint?.ele || undefined,
         distance_from_start_km: selectedPoint?.distanceFromStart || (triggerDistance ? parseFloat(triggerDistance) : undefined),
-        trigger_distance_km: triggerDistance ? parseFloat(triggerDistance) : undefined,
-        trigger_time_min: triggerTime ? parseInt(triggerTime) : undefined,
+        trigger_distance_km: triggerDistance ? parseFloat(triggerDistance) : null,
+        trigger_time_min: null,  // Spatial waypoints don't have time triggers
+        is_repeating: false,
         nutrition_type: nutritionType,
         product_name: productName || undefined,
         calories: calories ? parseInt(calories) : undefined,

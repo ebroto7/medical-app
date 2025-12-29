@@ -125,12 +125,13 @@ export const createTemporalLoopSchema = baseWaypointSchema.extend({
 });
 
 /**
- * Discriminated union schema for creating waypoints
+ * Union schema for creating waypoints
  *
- * Accepts any of the three waypoint types, discriminated by 'type' field.
- * Ensures type-safe validation based on waypoint type.
+ * Accepts any of the three waypoint types.
+ * Uses z.union instead of discriminatedUnion because temporal single and temporal loop
+ * both have type='temporal' (discriminated by is_repeating instead).
  */
-export const createWaypointSchema = z.discriminatedUnion('type', [
+export const createWaypointSchema = z.union([
   createSpatialWaypointSchema,
   createTemporalWaypointSchema,
   createTemporalLoopSchema,

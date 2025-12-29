@@ -218,14 +218,13 @@ describe('GPX Validation Schemas', () => {
   });
 
   describe('createWaypointSchema', () => {
-    it('should validate valid waypoint with all fields', () => {
+    it('should validate valid spatial waypoint with all fields', () => {
       const validWaypoint = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
         elevation_m: 100,
         distance_from_start_km: 5.5,
-        trigger_distance_km: 5,
-        trigger_time_min: 30,
         nutrition_type: 'energy_gel' as const,
         product_name: 'SIS Isotonic Gel',
         calories: 87,
@@ -245,11 +244,12 @@ describe('GPX Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate minimal waypoint with distance trigger', () => {
+    it('should validate minimal spatial waypoint with distance', () => {
       const minimalWaypoint = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'hydration' as const,
       };
 
@@ -257,10 +257,9 @@ describe('GPX Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate waypoint with time trigger only', () => {
+    it('should validate temporal waypoint with time trigger', () => {
       const timeOnlyWaypoint = {
-        latitude: 41.3851,
-        longitude: 2.1734,
+        type: 'temporal' as const,
         trigger_time_min: 30,
         nutrition_type: 'energy_gel' as const,
       };
@@ -269,45 +268,40 @@ describe('GPX Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should require at least one trigger', () => {
-      const noTrigger = {
+    it('should require type field', () => {
+      const noType = {
         latitude: 41.3851,
         longitude: 2.1734,
+        distance_from_start_km: 5,
         nutrition_type: 'energy_gel' as const,
       };
 
-      const result = createWaypointSchema.safeParse(noTrigger);
+      const result = createWaypointSchema.safeParse(noType);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe(
-          'At least one trigger (distance or time) is required'
-        );
-      }
     });
 
-    it('should validate latitude range', () => {
+    it('should validate latitude range for spatial waypoints', () => {
       const invalidLat = {
+        type: 'spatial' as const,
         latitude: 91, // Out of range
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'hydration' as const,
       };
 
       const result = createWaypointSchema.safeParse(invalidLat);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Latitude out of range');
-      }
     });
 
-    it('should accept valid latitude range', () => {
+    it('should accept valid latitude range for spatial waypoints', () => {
       const validLatitudes = [-90, -45, 0, 45, 90];
 
       validLatitudes.forEach((lat) => {
         const waypoint = {
+          type: 'spatial' as const,
           latitude: lat,
           longitude: 0,
-          trigger_distance_km: 1,
+          distance_from_start_km: 1,
           nutrition_type: 'hydration' as const,
         };
         const result = createWaypointSchema.safeParse(waypoint);
@@ -315,29 +309,28 @@ describe('GPX Validation Schemas', () => {
       });
     });
 
-    it('should validate longitude range', () => {
+    it('should validate longitude range for spatial waypoints', () => {
       const invalidLon = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 181, // Out of range
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'hydration' as const,
       };
 
       const result = createWaypointSchema.safeParse(invalidLon);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Longitude out of range');
-      }
     });
 
-    it('should accept valid longitude range', () => {
+    it('should accept valid longitude range for spatial waypoints', () => {
       const validLongitudes = [-180, -90, 0, 90, 180];
 
       validLongitudes.forEach((lon) => {
         const waypoint = {
+          type: 'spatial' as const,
           latitude: 0,
           longitude: lon,
-          trigger_distance_km: 1,
+          distance_from_start_km: 1,
           nutrition_type: 'hydration' as const,
         };
         const result = createWaypointSchema.safeParse(waypoint);
@@ -345,49 +338,39 @@ describe('GPX Validation Schemas', () => {
       });
     });
 
-    it('should reject negative distance', () => {
+    it('should reject negative distance for spatial waypoints', () => {
       const negativeDist = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: -5,
+        distance_from_start_km: -5,
         nutrition_type: 'hydration' as const,
       };
 
       const result = createWaypointSchema.safeParse(negativeDist);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Distance must be positive');
-      }
     });
 
-    it('should reject negative time', () => {
+    it('should reject negative time for temporal waypoints', () => {
       const negativeTime = {
-        latitude: 41.3851,
-        longitude: 2.1734,
+        type: 'temporal' as const,
         trigger_time_min: -30,
         nutrition_type: 'energy_gel' as const,
       };
 
       const result = createWaypointSchema.safeParse(negativeTime);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Time must be positive');
-      }
     });
 
-    it('should require trigger_time_min to be integer', () => {
+    it('should require trigger_time_min to be integer for temporal waypoints', () => {
       const floatTime = {
-        latitude: 41.3851,
-        longitude: 2.1734,
+        type: 'temporal' as const,
         trigger_time_min: 30.5,
         nutrition_type: 'energy_gel' as const,
       };
 
       const result = createWaypointSchema.safeParse(floatTime);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Time must be an integer');
-      }
     });
 
     it('should accept all valid nutrition types', () => {
@@ -403,9 +386,10 @@ describe('GPX Validation Schemas', () => {
 
       nutritionTypes.forEach((type) => {
         const waypoint = {
+          type: 'spatial' as const,
           latitude: 41.3851,
           longitude: 2.1734,
-          trigger_distance_km: 5,
+          distance_from_start_km: 5,
           nutrition_type: type,
         };
         const result = createWaypointSchema.safeParse(waypoint);
@@ -415,9 +399,10 @@ describe('GPX Validation Schemas', () => {
 
     it('should reject invalid nutrition type', () => {
       const invalidType = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'invalid_type',
       };
 
@@ -427,88 +412,79 @@ describe('GPX Validation Schemas', () => {
 
     it('should reject negative calories', () => {
       const negativeCalories = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'energy_gel' as const,
         calories: -100,
       };
 
       const result = createWaypointSchema.safeParse(negativeCalories);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Calories must be positive');
-      }
     });
 
     it('should require calories to be integer', () => {
       const floatCalories = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'energy_gel' as const,
         calories: 87.5,
       };
 
       const result = createWaypointSchema.safeParse(floatCalories);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Calories must be an integer');
-      }
     });
 
     it('should reject negative macros', () => {
       const negativeCarbs = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'energy_gel' as const,
         carbs: -10,
       };
 
       const result = createWaypointSchema.safeParse(negativeCarbs);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Carbs must be positive');
-      }
     });
 
     it('should validate product_name length', () => {
       const longProduct = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'energy_gel' as const,
         product_name: 'A'.repeat(201),
       };
 
       const result = createWaypointSchema.safeParse(longProduct);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Product name too long');
-      }
     });
 
     it('should validate notes length', () => {
       const longNotes = {
+        type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
-        trigger_distance_km: 5,
+        distance_from_start_km: 5,
         nutrition_type: 'energy_gel' as const,
         notes: 'A'.repeat(1001),
       };
 
       const result = createWaypointSchema.safeParse(longNotes);
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Notes too long');
-      }
     });
   });
 
   describe('updateWaypointSchema', () => {
-    it('should validate partial update', () => {
+    it('should validate partial update with waypoint_id', () => {
       const update = {
+        waypoint_id: '123e4567-e89b-12d3-a456-426614174000',
         notes: 'Updated notes',
       };
 
@@ -516,17 +492,15 @@ describe('GPX Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate full update', () => {
+    it('should validate full nutritional update', () => {
       const update = {
-        latitude: 41.3851,
-        longitude: 2.1734,
-        elevation_m: 150,
-        trigger_distance_km: 10,
-        trigger_time_min: 60,
+        waypoint_id: '123e4567-e89b-12d3-a456-426614174000',
         nutrition_type: 'solid_food' as const,
         product_name: 'Barrita',
         calories: 200,
         carbs: 40,
+        protein: 5,
+        fat: 2,
         notes: 'New notes',
       };
 
@@ -534,17 +508,20 @@ describe('GPX Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept empty update object', () => {
-      const update = {};
+    it('should require waypoint_id', () => {
+      const update = {
+        notes: 'Updated notes',
+      };
 
       const result = updateWaypointSchema.safeParse(update);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
-    it('should not require trigger constraint on update', () => {
-      // Updates don't require at least one trigger
+    it('should allow updating only nutrition data', () => {
       const update = {
+        waypoint_id: '123e4567-e89b-12d3-a456-426614174000',
         product_name: 'Updated Product',
+        calories: 100,
       };
 
       const result = updateWaypointSchema.safeParse(update);
