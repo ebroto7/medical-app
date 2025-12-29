@@ -7,6 +7,14 @@ import "./src/lib/env";
 const nextConfig: NextConfig = {
   // Prevent bundling of server-side libraries that use native modules or dynamic requires
   serverExternalPackages: ["pino", "pino-pretty"],
+
+  // Increase body size limit for GPX file uploads (up to 20MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '20mb'
+    }
+  },
+
   images: {
     remotePatterns: [
       {
@@ -53,7 +61,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               `img-src 'self' https://${supabaseUrl.hostname} data: blob:`,
               "font-src 'self' data:",
-              `connect-src 'self' https://${supabaseUrl.hostname} wss://${supabaseUrl.hostname}`,
+              `connect-src 'self' https://${supabaseUrl.hostname} wss://${supabaseUrl.hostname} ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*`,
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'"

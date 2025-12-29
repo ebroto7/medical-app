@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList, Plus, Library } from "lucide-react";
+import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList, Plus, Library, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { IconBadge } from "@/components/ui/icon-badge";
@@ -82,6 +82,7 @@ export function Sidebar({ role }: SidebarProps) {
         { label: "Mi Diario", icon: BookOpen, href: "/dashboard/patient", color: "green" as const },
         { label: "Biblioteca de menús", icon: Library, href: "/dashboard/patient/saved-meals", color: "yellow" as const },
         { label: "Mis Pautas", icon: ClipboardList, href: "/dashboard/patient/meal-plans", color: "purple" as const },
+        { label: "Planes GPS", icon: Route, href: "/dashboard/patient/gpx-plans", color: "primary" as const },
         { label: "Nutricionistas", icon: Users, href: "/dashboard/patient/nutritionists", color: "blue" as const },
         { label: "Notificaciones", icon: Bell, href: "/dashboard/notifications", badge: unreadCount, color: "orange" as const },
         { label: "Perfil", icon: Settings, href: "/dashboard/profile", color: "muted" as const },

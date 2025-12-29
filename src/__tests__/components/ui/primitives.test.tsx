@@ -12,15 +12,15 @@ describe('UI Primitives', () => {
         it('renders default variant correctly', () => {
             render(<Button>Click me</Button>);
             const btn = screen.getByText('Click me');
-            expect(btn).toHaveClass('bg-transparent'); // Default is transparent/border? 
-            // Checking class from cva: "bg-transparent border-2 border-foreground"
-            expect(btn).toHaveClass('border-foreground');
+            expect(btn).toHaveClass('bg-primary'); // Default variant has bg-primary
+            expect(btn).toHaveClass('text-primary-foreground');
         });
 
         it('renders destructive variant correctly', () => {
             render(<Button variant="destructive">Delete</Button>);
             const btn = screen.getByText('Delete');
-            expect(btn).toHaveClass('text-destructive');
+            expect(btn).toHaveClass('bg-destructive');
+            expect(btn).toHaveClass('text-destructive-foreground');
         });
 
         it('handles click events', () => {
