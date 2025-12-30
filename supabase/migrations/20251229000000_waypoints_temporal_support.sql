@@ -65,10 +65,10 @@ ALTER TABLE gpx_nutrition_waypoints
   );
 
 -- Index for queries by waypoint type
-CREATE INDEX idx_waypoints_type ON gpx_nutrition_waypoints(plan_id, type);
+CREATE INDEX idx_waypoints_type ON gpx_nutrition_waypoints(gpx_plan_id, type);
 
 -- Index for queries filtering repeating waypoints
-CREATE INDEX idx_waypoints_repeating ON gpx_nutrition_waypoints(plan_id, is_repeating)
+CREATE INDEX idx_waypoints_repeating ON gpx_nutrition_waypoints(gpx_plan_id, is_repeating)
   WHERE is_repeating = true;
 
 -- Update existing waypoints to type 'spatial' (all current waypoints are distance-based)

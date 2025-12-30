@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import type { GPXTrackPoint } from '@/lib/gpx/parser';
+import type { Waypoint } from '@/types/waypoint';
+import { isSpatialWaypoint, getWaypointProductName } from '@/types/waypoint';
 import dynamic from "next/dynamic";
 
 // Dynamic imports to avoid SSR issues with Leaflet
@@ -28,6 +30,7 @@ const Popup = dynamic(
 
 interface InteractiveMapProps {
   trackPoints: GPXTrackPoint[];
+  waypoints?: Waypoint[];
   hoverPoint?: GPXTrackPoint | null;
   onPointClick?: (point: GPXTrackPoint) => void;
   onHover?: (point: GPXTrackPoint | null) => void;
@@ -36,6 +39,7 @@ interface InteractiveMapProps {
 
 export function InteractiveMap({
   trackPoints,
+  waypoints = [],
   hoverPoint,
   onPointClick,
   onHover,
@@ -193,6 +197,49 @@ export function InteractiveMap({
               </Popup>
             </Marker>
           )}
+
+          {/* Spatial waypoint markers (nutrition waypoints with coordinates) */}
+          {waypoints.filter(isSpatialWaypoint).map((waypoint, idx) => (
+            <Marker
+              key={waypoint.id || idx}
+              position={[waypoint.latitude, waypoint.longitude]}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <p className="text-xs text-gray-500 uppercase mb-1 font-medium">Waypoint Nutricional</p>
+                  <p className="font-bold text-orange-600 mb-2">
+                    {getWaypointProductName(waypoint)}
+                  </p>
+
+                  <div className="space-y-1 text-xs">
+                    <p className="text-gray-700">
+                      <span className="font-semibold">Distancia:</span> KM {waypoint.distance_from_start_km.toFixed(1)}
+                    </p>
+                    {waypoint.elevation_m !== undefined && (
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Elevación:</span> {Math.round(waypoint.elevation_m)} m
+                      </p>
+                    )}
+                    {waypoint.calories !== undefined && (
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Calorías:</span> {waypoint.calories} kcal
+                      </p>
+                    )}
+                    {waypoint.carbs !== undefined && (
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Carbohidratos:</span> {waypoint.carbs.toFixed(1)} g
+                      </p>
+                    )}
+                    {waypoint.notes && (
+                      <p className="text-gray-600 mt-2 pt-2 border-t border-gray-200 italic">
+                        {waypoint.notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
         </MapContainer>
       )}
     </div>

@@ -10,7 +10,7 @@ import { InteractiveMap } from "./InteractiveMap";
 import { MiniElevationChart } from "./MiniElevationChart";
 import { TemporalTimeline } from "./TemporalTimeline";
 import { WaypointEditorDialog } from "./WaypointEditorDialog";
-import { Download, MapPin, TrendingUp, Mountain, Calendar, Activity, Loader2, Trash2, Plus, Map } from "lucide-react";
+import { Download, MapPin, TrendingUp, Mountain, Calendar, Activity, Loader2, Trash2, Plus, Map, Pencil } from "lucide-react";
 import type { GPXTrackPoint } from "@/lib/gpx/parser";
 import type { Waypoint } from "@/types/waypoint";
 
@@ -47,6 +47,7 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
 
   // Dialog states
   const [selectedPoint, setSelectedPoint] = useState<GPXTrackPoint | null>(null);
+  const [editingWaypoint, setEditingWaypoint] = useState<Waypoint | null>(null);
   const [waypointDialogOpen, setWaypointDialogOpen] = useState(false);
 
   // Chart/Map sync state
@@ -113,17 +114,28 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
 
   const handlePointClick = useCallback((point: GPXTrackPoint) => {
     setSelectedPoint(point);
+    setEditingWaypoint(null); // Clear editing state when creating from point
     setWaypointDialogOpen(true);
   }, []);
 
   const handleCreateManualWaypoint = useCallback(() => {
     setSelectedPoint(null); // No pre-selected point
+    setEditingWaypoint(null); // Clear editing state
+    setWaypointDialogOpen(true);
+  }, []);
+
+  const handleEditWaypoint = useCallback((waypoint: Waypoint) => {
+    setEditingWaypoint(waypoint);
+    setSelectedPoint(null); // Clear selected point when editing
     setWaypointDialogOpen(true);
   }, []);
 
   const handleWaypointCreated = useCallback(() => {
     // Reload waypoints
     loadPlanData();
+    // Clear states
+    setEditingWaypoint(null);
+    setSelectedPoint(null);
   }, [loadPlanData]);
 
   const handleExport = useCallback(async () => {
@@ -185,6 +197,31 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       setDeleting(false);
     }
   }, [planId, token, router]);
+
+  const handleDeleteWaypoint = useCallback(async (waypointId: string) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar este waypoint? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/gpx-plans/${planId}/waypoints?waypoint_id=${waypointId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete waypoint");
+      }
+
+      // Reload waypoints
+      await loadPlanData();
+    } catch (err) {
+      console.error("Delete waypoint error:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete waypoint");
+    }
+  }, [planId, token, loadPlanData]);
 
   const formatSportType = useCallback((type: string) => {
     const types: Record<string, string> = {
@@ -368,6 +405,7 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
               <div className="relative w-full" style={{ height: '600px' }}>
                 <InteractiveMap
                   trackPoints={trackPoints}
+                  waypoints={waypoints}
                   hoverPoint={hoverPoint}
                   onHover={setHoverPoint}
                   onPointClick={handlePointClick}
@@ -513,6 +551,28 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
                           </p>
                         )}
                       </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-accent"
+                          onClick={() => handleEditWaypoint(wp)}
+                          title="Editar waypoint"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeleteWaypoint(wp.id)}
+                          title="Eliminar waypoint"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -528,6 +588,7 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
         onOpenChange={setWaypointDialogOpen}
         planId={planId}
         selectedPoint={selectedPoint}
+        editingWaypoint={editingWaypoint}
         onWaypointCreated={handleWaypointCreated}
       />
     </div>
