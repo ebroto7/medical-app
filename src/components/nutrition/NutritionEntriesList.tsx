@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ interface NutritionEntriesListProps {
   useTokenAuth?: boolean;
 }
 
-export function NutritionEntriesList({
+export const NutritionEntriesList = React.memo(function NutritionEntriesList({
   userId,
   date,
   onDelete,
@@ -163,4 +163,4 @@ export function NutritionEntriesList({
       ))}
     </div>
   );
-}
+});

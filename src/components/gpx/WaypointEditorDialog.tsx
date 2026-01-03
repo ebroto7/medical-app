@@ -18,20 +18,14 @@ interface WaypointEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   planId: string;
+  trackPoints: GPXTrackPoint[];
   selectedPoint: GPXTrackPoint | null;
   editingWaypoint?: Waypoint | null;
   onWaypointCreated: () => void;
+  estimatedDuration?: number;  // Plan's estimated duration in minutes (for auto-calculating loop repetitions)
 }
 
-const NUTRITION_TYPES = [
-  { value: 'hydration', label: 'Hidratación (Agua)' },
-  { value: 'isotonic_drink', label: 'Bebida Isotónica' },
-  { value: 'energy_gel', label: 'Gel Energético' },
-  { value: 'solid_food', label: 'Comida Sólida' },
-  { value: 'salt_caps', label: 'Cápsulas de Sal' },
-  { value: 'caffeine', label: 'Cafeína' },
-  { value: 'custom', label: 'Personalizado' },
-];
+// Removed NUTRITION_TYPES - now using free-form name field instead
 
 const LOOP_COLORS = [
   { value: '#3b82f6', label: 'Azul' },
@@ -48,9 +42,11 @@ export function WaypointEditorDialog({
   open,
   onOpenChange,
   planId,
+  trackPoints,
   selectedPoint,
   editingWaypoint,
   onWaypointCreated,
+  estimatedDuration,
 }: WaypointEditorDialogProps) {
   const { token } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
@@ -60,8 +56,10 @@ export function WaypointEditorDialog({
   const [waypointType, setWaypointType] = useState<'spatial' | 'temporal' | 'loop'>('spatial');
 
   // Common form fields
-  const [nutritionType, setNutritionType] = useState<string>("hydration");
-  const [productName, setProductName] = useState("");
+  const [waypointName, setWaypointName] = useState<string>("");
+  const [description, setDescription] = useState("");
+  const [miniDescription, setMiniDescription] = useState("");  // For watch display (max 20 chars)
+  const [waypointColor, setWaypointColor] = useState("#ef4444");  // Default red
   const [calories, setCalories] = useState("");
   const [carbs, setCarbs] = useState("");
   const [protein, setProtein] = useState("");
@@ -87,7 +85,7 @@ export function WaypointEditorDialog({
   // Pre-fill distance when point is selected and switch to spatial tab
   useEffect(() => {
     if (selectedPoint && open && !editingWaypoint) {
-      const distanceKm = selectedPoint.distanceFromStart?.toFixed(1) || "0";
+      const distanceKm = selectedPoint.distanceFromStart?.toFixed(2) || "0";
       setTriggerDistance(distanceKm);
       setWaypointType('spatial');
     }
@@ -97,8 +95,10 @@ export function WaypointEditorDialog({
   useEffect(() => {
     if (editingWaypoint && open) {
       // Common fields
-      setNutritionType(editingWaypoint.nutrition_type);
-      setProductName(editingWaypoint.product_name || "");
+      setWaypointName(editingWaypoint.name || "Nuevo Waypoint");  // Use name field
+      setDescription(editingWaypoint.product_name || "");  // product_name becomes description
+      setMiniDescription(editingWaypoint.notes?.substring(0, 20) || "");  // First 20 chars of notes
+      setWaypointColor(editingWaypoint.color || "#ef4444");
       setCalories(editingWaypoint.calories?.toString() || "");
       setCarbs(editingWaypoint.carbs?.toString() || "");
       setProtein(editingWaypoint.protein?.toString() || "");
@@ -112,7 +112,7 @@ export function WaypointEditorDialog({
       // Determine waypoint type and fill specific fields
       if (isSpatialWaypoint(editingWaypoint)) {
         setWaypointType('spatial');
-        setTriggerDistance(editingWaypoint.distance_from_start_km.toFixed(1));
+        setTriggerDistance(editingWaypoint.distance_from_start_km.toFixed(2));
       } else if (isRepeatingWaypoint(editingWaypoint)) {
         setWaypointType('loop');
         setRepeatStartTime(editingWaypoint.repeat_config.start_time_min.toString());
@@ -129,8 +129,10 @@ export function WaypointEditorDialog({
 
   const resetForm = () => {
     setWaypointType('spatial');
-    setNutritionType("hydration");
-    setProductName("");
+    setWaypointName("Nuevo Waypoint");
+    setDescription("");
+    setMiniDescription("");
+    setWaypointColor("#ef4444");
     setTriggerDistance("");
     setTriggerTime("");
     setRepeatStartTime("");
@@ -165,14 +167,61 @@ export function WaypointEditorDialog({
           return;
         }
 
+        // Find the closest track point if not selected from chart
+        let pointToUse = selectedPoint;
+        if (!pointToUse && trackPoints.length > 0) {
+          const targetDistance = parseFloat(triggerDistance);
+          pointToUse = trackPoints.reduce((prev, curr) => {
+            const prevDist = Math.abs((prev.distanceFromStart || 0) - targetDistance);
+            const currDist = Math.abs((curr.distanceFromStart || 0) - targetDistance);
+            return currDist < prevDist ? curr : prev;
+          });
+        }
+
+        if (!pointToUse) {
+          setError("No se encontró un punto en el track para esta distancia");
+          setIsSaving(false);
+          return;
+        }
+
+        // Validate coordinates are valid numbers
+        if (typeof pointToUse.lat !== 'number' || typeof pointToUse.lon !== 'number') {
+          console.error('Invalid track point:', pointToUse);
+          setError("El punto seleccionado no tiene coordenadas válidas");
+          setIsSaving(false);
+          return;
+        }
+
+        const distance = pointToUse.distanceFromStart ?? parseFloat(triggerDistance);
+        if (typeof distance !== 'number' || isNaN(distance)) {
+          console.error('Invalid distance:', { distanceFromStart: pointToUse.distanceFromStart, triggerDistance });
+          setError("La distancia no es válida");
+          setIsSaving(false);
+          return;
+        }
+
+        // Validate waypoint name
+        if (!waypointName.trim()) {
+          setError("Debes especificar un nombre para el waypoint");
+          setIsSaving(false);
+          return;
+        }
+
+        // Validate mini description
+        if (!miniDescription.trim()) {
+          setError("Debes especificar una minidescripción para el reloj");
+          setIsSaving(false);
+          return;
+        }
+
         waypointData = {
           type: 'spatial' as const,
-          latitude: selectedPoint?.lat || 0,
-          longitude: selectedPoint?.lon || 0,
-          elevation_m: selectedPoint?.ele || undefined,
-          distance_from_start_km: selectedPoint?.distanceFromStart || parseFloat(triggerDistance),
-          nutrition_type: nutritionType,
-          product_name: productName || undefined,
+          latitude: pointToUse.lat,
+          longitude: pointToUse.lon,
+          elevation_m: pointToUse.ele !== undefined ? pointToUse.ele : undefined,
+          distance_from_start_km: distance,
+          name: waypointName.trim(),  // Waypoint name (free-form text)
+          product_name: description || miniDescription,  // Description or miniDescription as fallback
           calories: calories ? parseInt(calories) : undefined,
           carbs: carbs ? parseFloat(carbs) : undefined,
           protein: protein ? parseFloat(protein) : undefined,
@@ -181,7 +230,8 @@ export function WaypointEditorDialog({
           caffeine_mg: caffeineMg ? parseInt(caffeineMg) : undefined,
           quantity: quantity ? parseFloat(quantity) : undefined,
           quantity_unit: quantityUnit || undefined,
-          notes: notes || undefined,
+          notes: miniDescription,  // Save miniDescription in notes for GPX export
+          color: waypointColor,  // Save waypoint color
         };
       } else if (waypointType === 'temporal') {
         // Temporal single waypoint validation
@@ -191,11 +241,25 @@ export function WaypointEditorDialog({
           return;
         }
 
+        // Validate waypoint name
+        if (!waypointName.trim()) {
+          setError("Debes especificar un nombre para el waypoint");
+          setIsSaving(false);
+          return;
+        }
+
+        // Validate mini description
+        if (!miniDescription.trim()) {
+          setError("Debes especificar una minidescripción para el reloj");
+          setIsSaving(false);
+          return;
+        }
+
         waypointData = {
           type: 'temporal' as const,
           trigger_time_min: parseInt(triggerTime),
-          nutrition_type: nutritionType,
-          product_name: productName || undefined,
+          name: waypointName.trim(),  // Waypoint name (free-form text)
+          product_name: description || miniDescription,  // Description or miniDescription as fallback
           calories: calories ? parseInt(calories) : undefined,
           carbs: carbs ? parseFloat(carbs) : undefined,
           protein: protein ? parseFloat(protein) : undefined,
@@ -204,12 +268,35 @@ export function WaypointEditorDialog({
           caffeine_mg: caffeineMg ? parseInt(caffeineMg) : undefined,
           quantity: quantity ? parseFloat(quantity) : undefined,
           quantity_unit: quantityUnit || undefined,
-          notes: notes || undefined,
+          notes: miniDescription,  // Save miniDescription in notes for GPX export
+          color: waypointColor,  // Save waypoint color
         };
       } else {
         // Temporal loop validation
-        if (!repeatStartTime || !repeatInterval || !repeatCount) {
-          setError("Debes especificar tiempo de inicio, intervalo y número de repeticiones");
+        if (!repeatStartTime || !repeatInterval) {
+          setError("Debes especificar tiempo de inicio e intervalo");
+          setIsSaving(false);
+          return;
+        }
+
+        // Get effective repetitions (user input or auto-calculated)
+        const effectiveReps = getEffectiveRepetitions();
+        if (!effectiveReps) {
+          setError("Debes indicar número de repeticiones o establecer un tiempo estimado en el plan");
+          setIsSaving(false);
+          return;
+        }
+
+        // Validate waypoint name
+        if (!waypointName.trim()) {
+          setError("Debes especificar un nombre para el waypoint");
+          setIsSaving(false);
+          return;
+        }
+
+        // Validate mini description
+        if (!miniDescription.trim()) {
+          setError("Debes especificar una minidescripción para el reloj");
           setIsSaving(false);
           return;
         }
@@ -220,11 +307,12 @@ export function WaypointEditorDialog({
           repeat_config: {
             start_time_min: parseInt(repeatStartTime),
             interval_min: parseInt(repeatInterval),
-            repetitions: parseInt(repeatCount),
+            // Only include repetitions if user specified them (backend will calculate if missing)
+            ...(repeatCount ? { repetitions: parseInt(repeatCount) } : {}),
           },
-          color: loopColor,
-          nutrition_type: nutritionType,
-          product_name: productName || undefined,
+          color: loopColor,  // Loop uses loopColor instead of waypointColor
+          name: waypointName.trim(),  // Waypoint name (free-form text)
+          product_name: description || miniDescription,  // Description or miniDescription as fallback
           calories: calories ? parseInt(calories) : undefined,
           carbs: carbs ? parseFloat(carbs) : undefined,
           protein: protein ? parseFloat(protein) : undefined,
@@ -233,7 +321,7 @@ export function WaypointEditorDialog({
           caffeine_mg: caffeineMg ? parseInt(caffeineMg) : undefined,
           quantity: quantity ? parseFloat(quantity) : undefined,
           quantity_unit: quantityUnit || undefined,
-          notes: notes || undefined,
+          notes: miniDescription,  // Save miniDescription in notes for GPX export
         };
       }
 
@@ -244,9 +332,28 @@ export function WaypointEditorDialog({
         ? `/api/gpx-plans/${planId}/waypoints?waypoint_id=${editingWaypoint.id}`
         : `/api/gpx-plans/${planId}/waypoints`;
 
-      // If editing, add waypoint_id to the data
+      // Prepare request body
+      let requestBody;
       if (isEditing) {
-        waypointData.waypoint_id = editingWaypoint.id;
+        // For PATCH: only send allowed update fields
+        requestBody = {
+          waypoint_id: editingWaypoint.id,
+          name: waypointName.trim(),  // Updated field
+          product_name: description || miniDescription,  // Updated field
+          calories: waypointData.calories,
+          carbs: waypointData.carbs,
+          protein: waypointData.protein,
+          fat: waypointData.fat,
+          sodium_mg: waypointData.sodium_mg,
+          caffeine_mg: waypointData.caffeine_mg,
+          quantity: waypointData.quantity,
+          quantity_unit: waypointData.quantity_unit,
+          notes: miniDescription,  // Updated to save miniDescription
+          color: waypointType === 'loop' ? loopColor : waypointColor,  // Updated color
+        };
+      } else {
+        // For POST: send full waypoint data
+        requestBody = waypointData;
       }
 
       const response = await fetch(url, {
@@ -255,12 +362,17 @@ export function WaypointEditorDialog({
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(waypointData),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         const errorMsg = isEditing ? "Error al actualizar el waypoint" : "Error al crear el waypoint";
+        // Include validation details if available
+        if (errorData.details) {
+          const detailsStr = errorData.details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join(', ');
+          throw new Error(`${errorData.error}: ${detailsStr}`);
+        }
         throw new Error(errorData.error || errorMsg);
       }
 
@@ -283,12 +395,34 @@ export function WaypointEditorDialog({
     }
   };
 
-  // Calculate loop preview times
-  const loopPreviewTimes = () => {
-    if (!repeatStartTime || !repeatInterval || !repeatCount) return [];
+  // Auto-calculate repetitions based on estimated duration
+  const autoCalculateRepetitions = (): number | null => {
+    if (!estimatedDuration || !repeatStartTime || !repeatInterval) return null;
     const start = parseInt(repeatStartTime);
     const interval = parseInt(repeatInterval);
-    const count = parseInt(repeatCount);
+    if (isNaN(start) || isNaN(interval) || interval <= 0) return null;
+    // Calculate how many repetitions fit within the estimated duration
+    const reps = Math.floor((estimatedDuration - start) / interval) + 1;
+    return Math.min(Math.max(reps, 1), 50); // Clamp between 1 and 50
+  };
+
+  // Get effective repetition count (user input or auto-calculated)
+  const getEffectiveRepetitions = (): number | null => {
+    if (repeatCount) {
+      return parseInt(repeatCount);
+    }
+    return autoCalculateRepetitions();
+  };
+
+  // Check if using auto-calculated repetitions
+  const isUsingAutoCalculation = !repeatCount && autoCalculateRepetitions() !== null;
+
+  // Calculate loop preview times
+  const loopPreviewTimes = () => {
+    const count = getEffectiveRepetitions();
+    if (!repeatStartTime || !repeatInterval || !count) return [];
+    const start = parseInt(repeatStartTime);
+    const interval = parseInt(repeatInterval);
     return Array.from({ length: count }, (_, i) => start + (i * interval));
   };
 
@@ -296,7 +430,69 @@ export function WaypointEditorDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingWaypoint ? "Editar Waypoint Nutricional" : "Nuevo Waypoint Nutricional"}</DialogTitle>
+          <DialogTitle className="sr-only">
+            {editingWaypoint ? "Editar Waypoint" : "Nuevo Waypoint"}
+          </DialogTitle>
+
+          {/* Editable title with color picker */}
+          <div className="flex items-center gap-3 mb-2">
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => {
+                  // Toggle color picker
+                  const colorPicker = document.getElementById('waypoint-color-picker');
+                  if (colorPicker) {
+                    colorPicker.classList.toggle('hidden');
+                  }
+                }}
+                className="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition-transform cursor-pointer"
+                style={{ backgroundColor: waypointType === 'loop' ? loopColor : waypointColor }}
+                title="Cambiar color"
+                aria-label="Cambiar color del waypoint"
+              />
+
+              {/* Color picker dropdown */}
+              <div
+                id="waypoint-color-picker"
+                className="hidden absolute top-10 left-0 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-50"
+              >
+                <div className="flex gap-2 flex-wrap" style={{ width: '200px' }}>
+                  {LOOP_COLORS.map((color) => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => {
+                        if (waypointType === 'loop') {
+                          setLoopColor(color.value);
+                        } else {
+                          setWaypointColor(color.value);
+                        }
+                        document.getElementById('waypoint-color-picker')?.classList.add('hidden');
+                      }}
+                      className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-gray-900 transition-colors"
+                      style={{ backgroundColor: color.value }}
+                      title={color.label}
+                      aria-label={`Seleccionar color ${color.label}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <Input
+                value={waypointName}
+                onChange={(e) => setWaypointName(e.target.value)}
+                className="text-lg font-semibold border-none shadow-none focus-visible:ring-0 px-0"
+                placeholder="Nombre del waypoint"
+                disabled={isSaving}
+                maxLength={50}
+                aria-label="Nombre del waypoint"
+              />
+            </div>
+          </div>
+
           <DialogDescription>
             {selectedPoint ? (
               <span className="flex items-center gap-1 mt-1">
@@ -411,60 +607,36 @@ export function WaypointEditorDialog({
               </div>
 
               <div>
-                <Label htmlFor="loop-count">Número de repeticiones *</Label>
+                <Label htmlFor="loop-count">
+                  Número de repeticiones {estimatedDuration ? "(opcional)" : "*"}
+                </Label>
                 <Input
                   id="loop-count"
                   type="number"
                   value={repeatCount}
                   onChange={(e) => setRepeatCount(e.target.value)}
-                  placeholder="Ej: 10"
+                  placeholder={isUsingAutoCalculation ? `Auto: ${autoCalculateRepetitions()}` : "Ej: 10"}
                   disabled={isSaving}
                   max={50}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Cuántas veces (máx 50)...</p>
-              </div>
-
-              <div>
-                <Label>Color del bucle *</Label>
-                <div className="grid grid-cols-4 gap-3 mt-2">
-                  {LOOP_COLORS.map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      onClick={() => setLoopColor(color.value)}
-                      disabled={isSaving}
-                      className={`
-                        relative flex items-center justify-center h-12 rounded-lg border-2 transition-all
-                        ${loopColor === color.value
-                          ? 'border-gray-900 ring-2 ring-gray-900 ring-offset-2 scale-105'
-                          : 'border-gray-300 hover:border-gray-400 hover:scale-105'
-                        }
-                        ${isSaving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                      `}
-                      title={color.label}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-full"
-                        style={{ backgroundColor: color.value }}
-                      />
-                      {loopColor === color.value && (
-                        <div className="absolute -top-1 -right-1 bg-gray-900 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                          ✓
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Elige un color para identificar este bucle en la timeline
+                <p className="text-xs text-muted-foreground mt-1">
+                  {estimatedDuration
+                    ? `Cuántas veces (máx 50). Déjalo vacío para calcular según tiempo estimado (${estimatedDuration} min)`
+                    : "Cuántas veces (máx 50)..."
+                  }
                 </p>
               </div>
+
+              {/* Color selector removed - now in header */}
 
               {/* Preview */}
               {loopPreviewTimes().length > 0 && (
                 <div className="bg-indigo-50 border border-indigo-200 rounded p-4">
                   <p className="text-sm font-semibold text-indigo-900 mb-2">
                     📋 Vista previa: Se crearán {loopPreviewTimes().length} waypoints
+                    {isUsingAutoCalculation && (
+                      <span className="text-indigo-600 font-normal ml-1">(auto-calculado)</span>
+                    )}
                   </p>
                   <p className="text-xs text-indigo-700">
                     Minutos: {loopPreviewTimes().join(', ')}
@@ -474,39 +646,45 @@ export function WaypointEditorDialog({
             </TabsContent>
           </Tabs>
 
-          {/* Common nutrition fields */}
+          {/* Common waypoint fields */}
           <div className="border-t pt-4 space-y-4">
-            <h3 className="font-semibold text-sm text-gray-700">Datos Nutricionales</h3>
+            <h3 className="font-semibold text-sm text-gray-700">Información del Waypoint</h3>
 
-            {/* Nutrition Type */}
+            {/* Mini Description (for watch display) */}
             <div>
-              <Label htmlFor="nutrition-type">Tipo de Nutrición *</Label>
-              <Select
-                id="nutrition-type"
-                value={nutritionType}
-                onChange={(e) => setNutritionType(e.target.value)}
+              <Label htmlFor="mini-description">Minidescripción (para reloj) *</Label>
+              <Input
+                id="mini-description"
+                value={miniDescription}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length <= 20) {
+                    setMiniDescription(value);
+                  }
+                }}
+                placeholder="Ej: Gel Maurten"
                 disabled={isSaving}
-                className="mt-1"
-              >
-                {NUTRITION_TYPES.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </Select>
+                maxLength={20}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Máximo 20 caracteres - Texto que aparece en el reloj GPS ({miniDescription.length}/20)
+              </p>
             </div>
 
-            {/* Product Name */}
+            {/* Description */}
             <div>
-              <Label htmlFor="product-name">Producto</Label>
+              <Label htmlFor="description">Descripción (opcional)</Label>
               <Input
-                id="product-name"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="Ej: Gel SIS Isotónico, Aquarius, etc."
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ej: Maurten Gel 100 CAF, sabor vainilla"
                 disabled={isSaving}
                 maxLength={200}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Descripción detallada del waypoint
+              </p>
             </div>
 
           {/* Macronutrients */}

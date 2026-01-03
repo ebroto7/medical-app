@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ interface DayViewProps {
   readOnly?: boolean;
 }
 
-export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = false }: DayViewProps) {
+export const DayView = React.memo(function DayView({ selectedDate, onDateChange, onRefresh, readOnly = false }: DayViewProps) {
   const { token } = useAuth();
   const [entries, setEntries] = useState<NutritionEntry[]>([]);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
@@ -485,4 +485,4 @@ export function DayView({ selectedDate, onDateChange, onRefresh, readOnly = fals
       />
     </div>
   );
-}
+});

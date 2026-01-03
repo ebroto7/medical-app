@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +36,7 @@ interface MonthViewProps {
   onDayClick: (date: Date) => void;
 }
 
-export function MonthView({ selectedDate, onDateChange, onDayClick }: MonthViewProps) {
+export const MonthView = React.memo(function MonthView({ selectedDate, onDateChange, onDayClick }: MonthViewProps) {
   const { token } = useAuth();
   const [indicators, setIndicators] = useState<DayIndicators>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -216,4 +216,4 @@ export function MonthView({ selectedDate, onDateChange, onDayClick }: MonthViewP
       )}
     </div>
   );
-}
+});

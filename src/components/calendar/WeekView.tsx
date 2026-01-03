@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,7 +23,7 @@ interface WeekViewProps {
   onDayClick: (date: Date) => void;
 }
 
-export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewProps) {
+export const WeekView = React.memo(function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewProps) {
   const { token } = useAuth();
   const [weekData, setWeekData] = useState<DayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -179,4 +179,4 @@ export function WeekView({ selectedDate, onDateChange, onDayClick }: WeekViewPro
       </div>
     </div>
   );
-}
+});

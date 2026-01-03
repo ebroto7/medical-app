@@ -12,7 +12,7 @@ export const createGPXPlanSchema = z.object({
   description: z.string().max(1000, "Description too long").optional(),
   event_name: z.string().max(200, "Event name too long").optional(),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").optional(),
-  sport_type: z.enum(['running', 'cycling', 'triathlon', 'hiking', 'other']).default('running'),
+  sport_type: z.enum(['running', 'trail_running', 'cycling', 'mtb', 'hiking', 'swimming', 'triathlon', 'other']).default('running'),
 });
 
 /**
@@ -23,7 +23,7 @@ export const updateGPXPlanSchema = z.object({
   description: z.string().max(1000, "Description too long").optional(),
   event_name: z.string().max(200, "Event name too long").optional(),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").optional(),
-  sport_type: z.enum(['running', 'cycling', 'triathlon', 'hiking', 'other']).optional(),
+  sport_type: z.enum(['running', 'trail_running', 'cycling', 'mtb', 'hiking', 'swimming', 'triathlon', 'other']).optional(),
   nutritionist_id: z.string().uuid("Invalid nutritionist ID").optional(),
 });
 
@@ -33,23 +33,15 @@ export const updateGPXPlanSchema = z.object({
 const repeatConfigSchema = z.object({
   start_time_min: z.number().int("Start time must be an integer").min(0, "Start time must be positive").max(1440, "Start time cannot exceed 24 hours (1440 minutes)"),
   interval_min: z.number().int("Interval must be an integer").min(1, "Interval must be at least 1 minute").max(480, "Interval cannot exceed 8 hours (480 minutes)"),
-  repetitions: z.number().int("Repetitions must be an integer").min(1, "Must have at least 1 repetition").max(50, "Cannot exceed 50 repetitions"),
+  repetitions: z.number().int("Repetitions must be an integer").min(1, "Must have at least 1 repetition").max(50, "Cannot exceed 50 repetitions").optional(),  // Optional: auto-calculated if plan has estimated_duration
 });
 
 /**
  * Base schema with common nutrition waypoint fields
  */
 const baseWaypointSchema = z.object({
-  nutrition_type: z.enum([
-    'hydration',
-    'isotonic_drink',
-    'energy_gel',
-    'solid_food',
-    'salt_caps',
-    'caffeine',
-    'custom'
-  ]),
-  product_name: z.string().max(200, "Product name too long").optional(),
+  name: z.string().min(1, "Waypoint name is required").max(200, "Waypoint name too long"),  // Free-form text (1-200 chars)
+  product_name: z.string().max(200, "Product name too long").optional(),  // Product/brand name
   calories: z.number().int("Calories must be an integer").min(0, "Calories must be positive").optional(),
   carbs: z.number().min(0, "Carbs must be positive").optional(),
   protein: z.number().min(0, "Protein must be positive").optional(),
@@ -146,15 +138,7 @@ export const createWaypointSchema = z.union([
 export const updateWaypointSchema = z.object({
   waypoint_id: z.string().uuid("Invalid waypoint ID"),
   // Nutrition data (can update for any waypoint type)
-  nutrition_type: z.enum([
-    'hydration',
-    'isotonic_drink',
-    'energy_gel',
-    'solid_food',
-    'salt_caps',
-    'caffeine',
-    'custom'
-  ]).optional(),
+  name: z.string().min(1, "Waypoint name is required").max(200, "Waypoint name too long").optional(),  // Free-form text
   product_name: z.string().max(200, "Product name too long").optional(),
   calories: z.number().int("Calories must be an integer").min(0, "Calories must be positive").optional(),
   carbs: z.number().min(0, "Carbs must be positive").optional(),

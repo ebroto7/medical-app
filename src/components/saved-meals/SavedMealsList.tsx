@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Database } from "@/types/database";
 import { SavedMealsService } from "@/services/saved-meals";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ interface SavedMealsListProps {
     onSelect: (meal: SavedMeal) => void;
 }
 
-export function SavedMealsList({ onSelect }: SavedMealsListProps) {
+export const SavedMealsList = React.memo(function SavedMealsList({ onSelect }: SavedMealsListProps) {
     const [meals, setMeals] = useState<SavedMeal[]>([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
@@ -87,4 +87,4 @@ export function SavedMealsList({ onSelect }: SavedMealsListProps) {
             ))}
         </div>
     );
-}
+});

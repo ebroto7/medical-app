@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -14,7 +14,7 @@ interface SidebarProps {
   role?: string | null;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export const Sidebar = React.memo(function Sidebar({ role }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -204,4 +204,4 @@ export function Sidebar({ role }: SidebarProps) {
       )}
     </>
   );
-}
+});

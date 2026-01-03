@@ -20,7 +20,8 @@ const updateGPXPlanSchema = z.object({
   description: z.string().max(1000).optional(),
   event_name: z.string().max(200).optional(),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  sport_type: z.enum(['running', 'cycling', 'triathlon', 'hiking', 'other']).optional(),
+  sport_type: z.enum(['running', 'trail_running', 'cycling', 'mtb', 'hiking', 'swimming', 'triathlon', 'other']).optional(),
+  estimated_duration_minutes: z.number().int().min(1).max(2880).optional(), // max 48 hours
 });
 
 /**

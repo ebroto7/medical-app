@@ -38,7 +38,7 @@ describe('TemporalTimeline Component', () => {
         trigger_time_min: null,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'energy_gel',
+        name: 'Gel Energético',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -71,7 +71,7 @@ describe('TemporalTimeline Component', () => {
         trigger_time_min: 60,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'hydration',
+        name: 'Hidratación',
         product_name: 'Water',
         created_at: '2025-01-01T00:00:00Z',
       };
@@ -120,7 +120,7 @@ describe('TemporalTimeline Component', () => {
           repetitions: 5,
         },
         color: '#3b82f6',
-        nutrition_type: 'isotonic_drink',
+        name: 'Bebida Isotónica',
         product_name: 'Maurten Drink',
         created_at: '2025-01-01T00:00:00Z',
       };
@@ -195,7 +195,7 @@ describe('TemporalTimeline Component', () => {
         trigger_time_min: 60,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'hydration',
+        name: 'Hidratación',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -236,7 +236,7 @@ describe('TemporalTimeline Component', () => {
         trigger_time_min: null,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'energy_gel',
+        name: 'Gel Energético',
         created_at: '2025-01-01T00:00:00Z',
       };
 

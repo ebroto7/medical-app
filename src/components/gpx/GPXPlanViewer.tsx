@@ -10,7 +10,15 @@ import { InteractiveMap } from "./InteractiveMap";
 import { MiniElevationChart } from "./MiniElevationChart";
 import { TemporalTimeline } from "./TemporalTimeline";
 import { WaypointEditorDialog } from "./WaypointEditorDialog";
-import { Download, MapPin, TrendingUp, Mountain, Calendar, Activity, Loader2, Trash2, Plus, Map, Pencil } from "lucide-react";
+import { WaypointsTable } from "./WaypointsTable";
+import {
+  EditableSportCard,
+  EditableDurationCard,
+  EditablePaceCard,
+  EditableElevationRateCard,
+  EditableName,
+} from "./EditableStatCards";
+import { Download, TrendingUp, Mountain, Calendar, Loader2, Trash2, Plus, Map } from "lucide-react";
 import type { GPXTrackPoint } from "@/lib/gpx/parser";
 import type { Waypoint } from "@/types/waypoint";
 
@@ -52,6 +60,7 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
 
   // Chart/Map sync state
   const [hoverPoint, setHoverPoint] = useState<GPXTrackPoint | null>(null);
+  const [hoverWaypoint, setHoverWaypoint] = useState<Waypoint | null>(null);
 
   // View toggle state
   const [activeView, setActiveView] = useState<'map' | 'elevation'>('map');
@@ -112,6 +121,7 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
     loadPlanData();
   }, [loadPlanData]);
 
+  
   const handlePointClick = useCallback((point: GPXTrackPoint) => {
     setSelectedPoint(point);
     setEditingWaypoint(null); // Clear editing state when creating from point
@@ -223,19 +233,84 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
     }
   }, [planId, token, loadPlanData]);
 
-  const formatSportType = useCallback((type: string) => {
-    const types: Record<string, string> = {
-      running: "Running",
-      cycling: "Ciclismo",
-      triathlon: "Triatlón",
-      hiking: "Senderismo",
-      other: "Otro",
-    };
-    return types[type] || type;
-  }, []);
+  // Optimistic update callbacks for stat cards
+  const handleNameSave = useCallback(async (newName: string) => {
+    if (!plan) return;
+    const oldName = plan.name;
 
-  const formatNutritionType = useCallback((type: string) => {
-    const types: Record<string, string> = {
+    // Optimistic update
+    setPlan(prev => prev ? { ...prev, name: newName } : null);
+
+    try {
+      const response = await fetch(`/api/gpx-plans/${planId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newName }),
+      });
+      if (!response.ok) throw new Error("Failed to update name");
+    } catch (error) {
+      // Rollback on error
+      setPlan(prev => prev ? { ...prev, name: oldName } : null);
+      throw error;
+    }
+  }, [plan, planId, token]);
+
+  const handleSportTypeSave = useCallback(async (newSportType: string) => {
+    if (!plan) return;
+    const oldSportType = plan.sport_type;
+
+    // Optimistic update
+    setPlan(prev => prev ? { ...prev, sport_type: newSportType } : null);
+
+    try {
+      const response = await fetch(`/api/gpx-plans/${planId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sport_type: newSportType }),
+      });
+      if (!response.ok) throw new Error("Failed to update sport type");
+    } catch (error) {
+      // Rollback on error
+      setPlan(prev => prev ? { ...prev, sport_type: oldSportType } : null);
+      throw error;
+    }
+  }, [plan, planId, token]);
+
+  const handleDurationSave = useCallback(async (minutes: number) => {
+    if (!plan) return;
+    const oldDuration = plan.estimated_duration_minutes;
+
+    // Optimistic update
+    setPlan(prev => prev ? { ...prev, estimated_duration_minutes: minutes } : null);
+
+    try {
+      const response = await fetch(`/api/gpx-plans/${planId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ estimated_duration_minutes: minutes }),
+      });
+      if (!response.ok) throw new Error("Failed to update duration");
+    } catch (error) {
+      // Rollback on error
+      setPlan(prev => prev ? { ...prev, estimated_duration_minutes: oldDuration } : null);
+      throw error;
+    }
+  }, [plan, planId, token]);
+
+  // Format waypoint name - now a free-form text field
+  // Kept for backwards compatibility with legacy data using enum values
+  const formatWaypointName = useCallback((name: string) => {
+    // Legacy enum values translated to Spanish for existing data
+    const legacyTypes: Record<string, string> = {
       hydration: "Hidratación",
       isotonic_drink: "Bebida Isotónica",
       energy_gel: "Gel Energético",
@@ -244,7 +319,8 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       caffeine: "Cafeína",
       custom: "Personalizado",
     };
-    return types[type] || type;
+    // Return translated legacy value or the name as-is for free-form entries
+    return legacyTypes[name] || name;
   }, []);
 
   if (loading) {
@@ -268,7 +344,11 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{plan.name}</h1>
+          <EditableName
+            name={plan.name}
+            onSave={handleNameSave}
+            className="text-3xl"
+          />
           {plan.description && (
             <p className="text-muted-foreground mt-2">{plan.description}</p>
           )}
@@ -319,24 +399,26 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {/* Distancia Total */}
         <Card className="hover:shadow-md transition-shadow border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Distancia Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Distancia</CardTitle>
             <div className="p-2 bg-blue-50 rounded-lg">
               <TrendingUp className="h-4 w-4 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {plan.total_distance_km?.toFixed(2) || "0"} km
+              {plan.total_distance_km?.toFixed(1) || "0"} km
             </div>
           </CardContent>
         </Card>
 
+        {/* Desnivel Positivo */}
         <Card className="hover:shadow-md transition-shadow border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Desnivel Positivo</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Desnivel +</CardTitle>
             <div className="p-2 bg-green-50 rounded-lg">
               <Mountain className="h-4 w-4 text-green-600" />
             </div>
@@ -348,29 +430,31 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow border-gray-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Waypoints</CardTitle>
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <MapPin className="h-4 w-4 text-purple-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{waypoints.length}</div>
-          </CardContent>
-        </Card>
+        {/* Deporte - Editable */}
+        <EditableSportCard
+          sportType={plan.sport_type}
+          onSave={handleSportTypeSave}
+        />
 
-        <Card className="hover:shadow-md transition-shadow border-gray-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Deporte</CardTitle>
-            <div className="p-2 bg-orange-50 rounded-lg">
-              <Activity className="h-4 w-4 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{formatSportType(plan.sport_type)}</div>
-          </CardContent>
-        </Card>
+        {/* Tiempo - Editable */}
+        <EditableDurationCard
+          durationMinutes={plan.estimated_duration_minutes || null}
+          onSave={handleDurationSave}
+        />
+
+        {/* Ritmo - Editable (recalculates duration) */}
+        <EditablePaceCard
+          distanceKm={plan.total_distance_km || 0}
+          durationMinutes={plan.estimated_duration_minutes || null}
+          onSave={handleDurationSave}
+        />
+
+        {/* Desnivel/hora - Editable (recalculates duration) */}
+        <EditableElevationRateCard
+          elevationGainM={plan.total_elevation_gain_m || 0}
+          durationMinutes={plan.estimated_duration_minutes || null}
+          onSave={handleDurationSave}
+        />
       </div>
 
       {/* View Toggle */}
@@ -394,55 +478,64 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       {/* Elevation Chart & Interactive Map */}
       {trackPoints.length > 0 ? (
         activeView === 'map' ? (
-          <Card className="relative">
-            <CardHeader>
-              <CardTitle>Mapa Interactivo</CardTitle>
-              <CardDescription>
-                Visualización de la ruta con perfil de elevación
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="relative w-full" style={{ height: '600px' }}>
+          <>
+            <Card className="relative">
+              <CardHeader>
+                <CardTitle>Mapa Interactivo</CardTitle>
+                <CardDescription>
+                  Haz click en la ruta para agregar un waypoint
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
                 <InteractiveMap
                   trackPoints={trackPoints}
                   waypoints={waypoints}
                   hoverPoint={hoverPoint}
+                  hoverWaypoint={hoverWaypoint}
                   onHover={setHoverPoint}
+                  onWaypointHover={setHoverWaypoint}
+                  onWaypointClick={handleEditWaypoint}
                   onPointClick={handlePointClick}
                   height={600}
                 />
+              </CardContent>
+            </Card>
 
-                {/* Mini elevation chart overlay */}
-                <div className="absolute bottom-0 left-0 right-0 z-[450]">
-                  <MiniElevationChart
-                    trackPoints={trackPoints}
-                    waypoints={waypoints}
-                    hoverPoint={hoverPoint}
-                    onHover={setHoverPoint}
-                    height={120}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Mini elevation chart - below map */}
+            <div className="w-full">
+              <MiniElevationChart
+                trackPoints={trackPoints}
+                waypoints={waypoints}
+                hoverPoint={hoverPoint}
+                hoverWaypoint={hoverWaypoint}
+                onHover={setHoverPoint}
+                onWaypointHover={setHoverWaypoint}
+                onWaypointClick={handleEditWaypoint}
+                height={120}
+              />
+            </div>
+          </>
         ) : (
           <Card>
             <CardHeader>
               <CardTitle>Perfil de Elevación</CardTitle>
               <CardDescription>
-                Haz click en el gráfico para agregar un waypoint nutricional
+                Haz click en el gráfico para agregar un waypoint
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            {/* <CardContent> */}
               <ElevationChart
                 trackPoints={trackPoints}
                 waypoints={waypoints}
                 onPointClick={handlePointClick}
+                onWaypointClick={handleEditWaypoint}
+                onWaypointHover={setHoverWaypoint}
+                hoverWaypoint={hoverWaypoint}
                 onHover={setHoverPoint}
                 hoverPoint={hoverPoint}
                 height={600}
               />
-            </CardContent>
+            {/* </CardContent> */}
           </Card>
         )
       ) : (
@@ -462,20 +555,17 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
       <TemporalTimeline
         waypoints={waypoints}
         totalDuration={plan.estimated_duration_minutes || 240}
-        onWaypointClick={(waypoint) => {
-          // TODO: Open edit dialog for this waypoint
-          console.log('Timeline waypoint clicked:', waypoint);
-        }}
+        onWaypointClick={(waypoint) => handleEditWaypoint(waypoint)}
       />
 
-      {/* Waypoints List */}
+      {/* Waypoints Table */}
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle>Waypoints Nutricionales</CardTitle>
+              <CardTitle>Waypoints</CardTitle>
               <CardDescription>
-                Haz click en el gráfico o usa el botón para agregar waypoints
+                Haz click en el gráfico o usa el botón para agregar waypoints. Click en las columnas KM o Tiempo para ordenar.
               </CardDescription>
             </div>
             <Button onClick={handleCreateManualWaypoint} size="sm">
@@ -485,100 +575,11 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {waypoints.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No hay waypoints nutricionales aún</p>
-              <p className="text-sm mt-2">
-                Haz click en el gráfico de elevación para agregar uno
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {waypoints.map((wp) => {
-                const triggers = [];
-                if (wp.trigger_distance_km) {
-                  triggers.push(`KM ${wp.trigger_distance_km.toFixed(1)}`);
-                }
-                if (wp.trigger_time_min) {
-                  triggers.push(`${wp.trigger_time_min} min`);
-                }
-
-                return (
-                  <div
-                    key={wp.id}
-                    className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="h-4 w-4 text-red-500" />
-                          <span className="font-semibold">
-                            {triggers.join(" / ")}
-                          </span>
-                          <span className="text-muted-foreground">·</span>
-                          <span className="text-sm">
-                            {formatNutritionType(wp.nutrition_type)}
-                          </span>
-                        </div>
-
-                        {wp.product_name && (
-                          <p className="text-sm font-medium mb-1">{wp.product_name}</p>
-                        )}
-
-                        {/* Macros */}
-                        {(wp.calories || wp.carbs || wp.protein) && (
-                          <div className="flex gap-4 text-xs text-muted-foreground mb-2">
-                            {wp.calories && <span>{wp.calories} kcal</span>}
-                            {wp.carbs && <span>{wp.carbs}g carbs</span>}
-                            {wp.protein && <span>{wp.protein}g prot</span>}
-                            {wp.sodium_mg && <span>{wp.sodium_mg}mg Na</span>}
-                            {wp.caffeine_mg && <span>{wp.caffeine_mg}mg cafeína</span>}
-                          </div>
-                        )}
-
-                        {/* Quantity */}
-                        {wp.quantity && wp.quantity_unit && (
-                          <p className="text-sm text-muted-foreground">
-                            Cantidad: {wp.quantity} {wp.quantity_unit}
-                          </p>
-                        )}
-
-                        {/* Notes */}
-                        {wp.notes && (
-                          <p className="text-sm text-muted-foreground mt-2 italic">
-                            {wp.notes}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:bg-accent"
-                          onClick={() => handleEditWaypoint(wp)}
-                          title="Editar waypoint"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteWaypoint(wp.id)}
-                          title="Eliminar waypoint"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <WaypointsTable
+            waypoints={waypoints}
+            onEdit={handleEditWaypoint}
+            onDelete={handleDeleteWaypoint}
+          />
         </CardContent>
       </Card>
 
@@ -587,9 +588,11 @@ export function GPXPlanViewer({ planId }: GPXPlanViewerProps) {
         open={waypointDialogOpen}
         onOpenChange={setWaypointDialogOpen}
         planId={planId}
+        trackPoints={trackPoints}
         selectedPoint={selectedPoint}
         editingWaypoint={editingWaypoint}
         onWaypointCreated={handleWaypointCreated}
+        estimatedDuration={plan.estimated_duration_minutes}
       />
     </div>
   );

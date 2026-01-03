@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -31,11 +31,7 @@ export default function MyPatients() {
   const [searchMessage, setSearchMessage] = useState("");
   const [searchMessageType, setSearchMessageType] = useState<"success" | "error" | "warning">("success");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [patientsRes, requestsRes] = await Promise.all([
         fetch("/api/nutrition/my-patients"),
@@ -52,9 +48,24 @@ export default function MyPatients() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSearch = async () => {
+  // Only refresh pending requests (not patients) after sending a new request
+  const refreshPendingRequests = useCallback(async () => {
+    try {
+      const requestsRes = await fetch("/api/nutrition/my-pending-requests");
+      const requestsData = await requestsRes.json();
+      setPendingRequests(requestsData.data || []);
+    } catch (error) {
+      console.error("Error refreshing pending requests:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleSearch = useCallback(async () => {
     if (!searchEmail.trim()) {
       setSearchMessage("Por favor ingresa un email");
       setSearchMessageType("error");
@@ -85,8 +96,8 @@ export default function MyPatients() {
         setSearchMessage("Solicitud enviada exitosamente");
         setSearchMessageType("success");
         setSearchEmail("");
-        // Refetch requests
-        setTimeout(fetchData, 1000);
+        // Only refresh pending requests (not all data)
+        refreshPendingRequests();
       }
     } catch (error) {
       setSearchMessage("Error al enviar solicitud");
@@ -94,7 +105,11 @@ export default function MyPatients() {
     } finally {
       setSearchLoading(false);
     }
-  };
+  }, [searchEmail, refreshPendingRequests]);
+
+  const handlePatientClick = useCallback((patientId: string) => {
+    router.push(`/dashboard/nutritionist/patients/${patientId}`);
+  }, [router]);
 
   return (
     <DashboardLayout>
@@ -188,7 +203,7 @@ export default function MyPatients() {
                 {patients.map((patient) => (
                   <button
                     key={patient.connectionId}
-                    onClick={() => router.push(`/dashboard/nutritionist/patients/${patient.patient.id}`)}
+                    onClick={() => handlePatientClick(patient.patient.id)}
                     className="bg-card/70 backdrop-blur-sm rounded-lg shadow-sm p-6 hover:shadow-md hover:bg-card/90 transition-all text-left border border-border"
                   >
                     <p className="font-medium text-foreground text-lg">{patient.patient.fullName}</p>

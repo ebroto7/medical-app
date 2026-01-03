@@ -18,8 +18,8 @@ export interface RepeatConfig {
 interface WaypointBase {
   id: string;
   plan_id: string;
-  nutrition_type: string;
-  product_name?: string;
+  name: string;  // Waypoint name (free-form text, 1-200 chars)
+  product_name?: string;  // Product/brand name (optional)
   calories?: number;
   carbs?: number;
   protein?: number;
@@ -223,22 +223,15 @@ export const getWaypointTriggerLabel = (waypoint: Waypoint): string => {
 };
 
 /**
- * Get product display name for waypoint
+ * Get display name for waypoint
  *
  * @param waypoint - Waypoint to get name for
- * @returns Product name or formatted nutrition type
+ * @returns Waypoint name or product name
  *
  * @example
- * getWaypointProductName(waypoint) // "Maurten Gel" or "Energy Gel"
+ * getWaypointProductName(waypoint) // "Gel energético" or "Maurten Gel"
  */
 export const getWaypointProductName = (waypoint: Waypoint): string => {
-  if (waypoint.product_name) {
-    return waypoint.product_name;
-  }
-
-  // Format nutrition type to readable string
-  return waypoint.nutrition_type
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  // Return waypoint name as primary, or product_name as fallback
+  return waypoint.name || waypoint.product_name || 'Waypoint';
 };

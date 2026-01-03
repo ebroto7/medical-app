@@ -1,6 +1,7 @@
 "use client";
 
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, ReferenceLine, Tooltip } from 'recharts';
+import React from 'react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, ReferenceLine, ReferenceDot, Tooltip } from 'recharts';
 import type { GPXTrackPoint } from '@/lib/gpx/parser';
 import type { Waypoint } from '@/types/waypoint';
 import { isSpatialWaypoint } from '@/types/waypoint';
@@ -9,15 +10,21 @@ interface MiniElevationChartProps {
   trackPoints: GPXTrackPoint[];
   waypoints?: Waypoint[];
   hoverPoint?: GPXTrackPoint | null;
+  hoverWaypoint?: Waypoint | null;
   onHover?: (point: GPXTrackPoint | null) => void;
+  onWaypointHover?: (waypoint: Waypoint | null) => void;
+  onWaypointClick?: (waypoint: Waypoint) => void;
   height?: number;
 }
 
-export function MiniElevationChart({
+export const MiniElevationChart = React.memo(function MiniElevationChart({
   trackPoints,
   waypoints = [],
   hoverPoint,
+  hoverWaypoint,
   onHover,
+  onWaypointHover,
+  onWaypointClick,
   height = 100
 }: MiniElevationChartProps) {
   // Same data prep as ElevationChart
@@ -53,6 +60,9 @@ export function MiniElevationChart({
     }
   };
 
+  if (chartData.length === 0) return null;
+
+  // Calculate Y axis bounds for ReferenceDot positioning
   const elevations = chartData.map(d => d.elevation);
   const minElevation = Math.min(...elevations);
   const maxElevation = Math.max(...elevations);
@@ -60,30 +70,17 @@ export function MiniElevationChart({
   const yAxisMin = Math.floor(minElevation - elevationRange * 0.1);
   const yAxisMax = Math.ceil(maxElevation + elevationRange * 0.1);
 
-  if (chartData.length === 0) return null;
-
-  const totalDistance = trackPoints[trackPoints.length - 1]?.distanceFromStart || 0;
-  const maxElev = Math.max(...elevations);
-  const minElev = Math.min(...elevations);
-
   return (
     <div
-      className="w-full bg-white/95 backdrop-blur-sm border-t-2 border-gray-300 shadow-xl relative"
-      style={{ height: `${height}px`, minHeight: `${height}px` }}
+      className="w-full bg-white rounded-lg shadow-sm border border-gray-200 relative"
+      style={{ height: `${height}px`, minHeight: `${height}px`, width: '100%' }}
     >
-      {/* Distance and Elevation Labels */}
-      <div className="absolute top-1 left-3 right-3 flex justify-between items-start z-10 text-xs font-semibold text-gray-700 pointer-events-none">
-        <span>0 km</span>
-        <span className="text-blue-600">{minElev.toFixed(0)}m - {maxElev.toFixed(0)}m</span>
-        <span>{totalDistance.toFixed(1)} km</span>
-      </div>
-
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer width="100%" height={height} minWidth={200} minHeight={height}>
         <AreaChart
           data={chartData}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
+          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
         >
           <defs>
             <linearGradient id="miniElevationGradient" x1="0" y1="0" x2="0" y2="1">
@@ -92,19 +89,18 @@ export function MiniElevationChart({
             </linearGradient>
           </defs>
 
-          {/* Minimal axes - no labels */}
+          {/* X axis - hidden but functional (required for ReferenceLine positioning) */}
           <XAxis
             dataKey="distance"
-            tick={false}
-            axisLine={{ stroke: '#e5e7eb', strokeWidth: 1 }}
-            tickLine={false}
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            hide={true}
           />
 
+          {/* Y axis - hidden but functional (required for ReferenceDot positioning) */}
           <YAxis
             domain={[yAxisMin, yAxisMax]}
-            tick={false}
-            axisLine={{ stroke: '#e5e7eb', strokeWidth: 1 }}
-            tickLine={false}
+            hide={true}
           />
 
           <Tooltip
@@ -151,18 +147,44 @@ export function MiniElevationChart({
             />
           )}
 
-          {/* Waypoint markers (minimal - only spatial waypoints) */}
-          {waypoints.filter(isSpatialWaypoint).map((wp, idx) => (
-            <ReferenceLine
-              key={wp.id || idx}
-              x={parseFloat((wp.distance_from_start_km || 0).toFixed(2))}
-              stroke="#f59e0b"
-              strokeWidth={1.5}
-              strokeDasharray="3 3"
-            />
-          ))}
+          {/* Waypoint markers (spatial waypoints) - vertical dotted lines + clickable dots */}
+          {waypoints.filter(isSpatialWaypoint).map((wp, idx) => {
+            // Validate waypoint has distance (same as ElevationChart)
+            if (wp.distance_from_start_km === undefined || wp.distance_from_start_km === null) {
+              return null;
+            }
+
+            const wpColor = wp.color || '#ef4444'; // Default red if no color
+            const xPos = parseFloat(wp.distance_from_start_km.toFixed(2));
+            const isHovered = hoverWaypoint?.id === wp.id;
+
+            return (
+              <React.Fragment key={wp.id || idx}>
+                {/* Vertical dashed line */}
+                <ReferenceLine
+                  x={xPos}
+                  stroke={wpColor}
+                  strokeWidth={isHovered ? 4 : 3}
+                  strokeDasharray="6 3"
+                />
+                {/* Clickable dot at bottom */}
+                <ReferenceDot
+                  x={xPos}
+                  y={yAxisMin}
+                  r={isHovered ? 10 : 7}
+                  fill={wpColor}
+                  stroke="white"
+                  strokeWidth={2}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => onWaypointClick?.(wp)}
+                  onMouseEnter={() => onWaypointHover?.(wp)}
+                  onMouseLeave={() => onWaypointHover?.(null)}
+                />
+              </React.Fragment>
+            );
+          })}
         </AreaChart>
       </ResponsiveContainer>
     </div>
   );
-}
+});

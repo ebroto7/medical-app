@@ -165,11 +165,55 @@ export async function POST(
     const body = await request.json();
     const validatedData = createWaypointSchema.parse(body);
 
+    // 4.5 Auto-calculate repetitions for temporal loops if not provided
+    if (validatedData.type === 'temporal' && validatedData.is_repeating) {
+      if (!validatedData.repeat_config.repetitions) {
+        // Fetch plan's estimated_duration_minutes
+        const { data: planData } = await supabase
+          .from("gpx_plans")
+          .select("estimated_duration_minutes")
+          .eq("id", planId)
+          .single();
+
+        if (!planData?.estimated_duration_minutes) {
+          return Response.json(
+            { error: "Debes especificar el número de repeticiones o establecer un tiempo estimado en el plan" },
+            { status: 400 }
+          );
+        }
+
+        const { start_time_min, interval_min } = validatedData.repeat_config;
+        const duration = planData.estimated_duration_minutes;
+
+        // Validate that start_time_min is within the plan duration
+        if (start_time_min >= duration) {
+          return Response.json(
+            { error: `El tiempo de inicio (${start_time_min} min) debe ser menor que la duración del plan (${duration} min)` },
+            { status: 400 }
+          );
+        }
+
+        // Calculate repetitions: (duration - start) / interval + 1
+        const calculatedReps = Math.floor((duration - start_time_min) / interval_min) + 1;
+
+        // Clamp between 1 and 50
+        validatedData.repeat_config.repetitions = Math.min(Math.max(calculatedReps, 1), 50);
+
+        logger.info(
+          { planId, start: start_time_min, interval: interval_min, duration, calculatedReps: validatedData.repeat_config.repetitions },
+          "Auto-calculated loop repetitions"
+        );
+      }
+    }
+
     // 5. Prepare insert data based on waypoint type
+    // Default color if not provided
+    const defaultColor = '#3b82f6';
+
     const insertData: any = {
       gpx_plan_id: planId,
       type: validatedData.type,
-      nutrition_type: validatedData.nutrition_type,
+      name: validatedData.name,
       product_name: validatedData.product_name,
       calories: validatedData.calories,
       carbs: validatedData.carbs,
@@ -180,7 +224,7 @@ export async function POST(
       quantity: validatedData.quantity,
       quantity_unit: validatedData.quantity_unit,
       notes: validatedData.notes,
-      color: validatedData.color,
+      color: validatedData.color || defaultColor,  // Apply default color if not provided
       // Legacy fields for backwards compatibility
       icon_symbol: validatedData.icon_symbol,
       sort_order: validatedData.sort_order,

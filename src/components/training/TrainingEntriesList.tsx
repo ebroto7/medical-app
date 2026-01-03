@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
@@ -17,7 +17,7 @@ interface TrainingEntriesListProps {
   readOnly?: boolean;
 }
 
-export function TrainingEntriesList({
+export const TrainingEntriesList = React.memo(function TrainingEntriesList({
   userId,
   date,
   onDelete,
@@ -153,4 +153,4 @@ export function TrainingEntriesList({
       })}
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
@@ -17,7 +17,7 @@ interface PatientWeekViewProps {
   onDateChange: (date: Date) => void;
 }
 
-export function PatientWeekView({ patientId, selectedDate, onDateChange }: PatientWeekViewProps) {
+export const PatientWeekView = React.memo(function PatientWeekView({ patientId, selectedDate, onDateChange }: PatientWeekViewProps) {
   const [entries, setEntries] = useState<NutritionEntry[]>([]);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,4 +163,4 @@ export function PatientWeekView({ patientId, selectedDate, onDateChange }: Patie
       </div>
     </div>
   );
-}
+});

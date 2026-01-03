@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
@@ -47,10 +47,18 @@ export default function PatientGPXPlansPage() {
     if (token) fetchPlans();
   }, [token]);
 
-  const handlePlanUploaded = (planId: string) => {
+  const handlePlanUploaded = useCallback((planId: string) => {
     // Navigate to plan viewer
     router.push(`/dashboard/patient/gpx-plans/${planId}`);
-  };
+  }, [router]);
+
+  const handlePlanClick = useCallback((planId: string) => {
+    router.push(`/dashboard/patient/gpx-plans/${planId}`);
+  }, [router]);
+
+  const handleOpenUploadDialog = useCallback(() => {
+    setUploadDialogOpen(true);
+  }, []);
 
   const formatSportType = (type: string) => {
     const types: Record<string, string> = {
@@ -79,7 +87,7 @@ export default function PatientGPXPlansPage() {
               Gestiona tus pautas nutricionales basadas en rutas GPS
             </p>
           </div>
-          <Button onClick={() => setUploadDialogOpen(true)}>
+          <Button onClick={handleOpenUploadDialog}>
             <Upload className="h-4 w-4 mr-2" />
             Nuevo Plan GPS
           </Button>
@@ -98,7 +106,7 @@ export default function PatientGPXPlansPage() {
               <p className="text-sm mb-4">
                 Sube un archivo GPX de tu próxima ruta y crea un plan nutricional personalizado
               </p>
-              <Button onClick={() => setUploadDialogOpen(true)}>
+              <Button onClick={handleOpenUploadDialog}>
                 <Upload className="h-4 w-4 mr-2" />
                 Subir Primer Plan
               </Button>
@@ -110,7 +118,7 @@ export default function PatientGPXPlansPage() {
               <Card
                 key={plan.id}
                 className="p-6 cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => router.push(`/dashboard/patient/gpx-plans/${plan.id}`)}
+                onClick={() => handlePlanClick(plan.id)}
               >
                 <div className="space-y-4">
                   {/* Header with Icon */}

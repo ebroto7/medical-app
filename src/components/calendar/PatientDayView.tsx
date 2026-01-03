@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ interface PatientDayViewProps {
   onDateChange: (date: Date) => void;
 }
 
-export function PatientDayView({ patientId, selectedDate, onDateChange }: PatientDayViewProps) {
+export const PatientDayView = React.memo(function PatientDayView({ patientId, selectedDate, onDateChange }: PatientDayViewProps) {
   const [entries, setEntries] = useState<NutritionEntry[]>([]);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,17 +93,17 @@ export function PatientDayView({ patientId, selectedDate, onDateChange }: Patien
     fetchData();
   }, [patientId, dateString]);
 
-  const goToPreviousDay = () => {
+  const goToPreviousDay = useCallback(() => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() - 1);
     onDateChange(newDate);
-  };
+  }, [selectedDate, onDateChange]);
 
-  const goToNextDay = () => {
+  const goToNextDay = useCallback(() => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + 1);
     onDateChange(newDate);
-  };
+  }, [selectedDate, onDateChange]);
 
   // Combine and sort items by time
   const timelineItems: TimelineItem[] = [
@@ -293,4 +293,4 @@ export function PatientDayView({ patientId, selectedDate, onDateChange }: Patien
       />
     </div>
   );
-}
+});

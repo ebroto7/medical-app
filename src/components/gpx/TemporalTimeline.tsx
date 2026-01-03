@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import type { Waypoint } from '@/types/waypoint';
 import { isTemporalWaypoint, isRepeatingWaypoint, expandTemporalLoop, getWaypointProductName } from '@/types/waypoint';
 
@@ -31,7 +31,7 @@ interface TimelineMarker {
  * - Hover labels with time and product name
  * - Click handler for waypoint interaction
  */
-export function TemporalTimeline({
+export const TemporalTimeline = React.memo(function TemporalTimeline({
   waypoints,
   totalDuration = 240,  // Default 4 hours (240 minutes)
   height = 100,
@@ -71,6 +71,17 @@ export function TemporalTimeline({
     return markers.sort((a, b) => a.time - b.time);
   }, [waypoints]);
 
+  // Calculate effective duration: max of provided duration and max waypoint time + 10% buffer
+  const effectiveDuration = useMemo(() => {
+    if (timelineMarkers.length === 0) return totalDuration;
+
+    const maxMarkerTime = Math.max(...timelineMarkers.map(m => m.time));
+    // Add 10% buffer after last marker, minimum 30 min
+    const minRequiredDuration = maxMarkerTime + Math.max(30, maxMarkerTime * 0.1);
+
+    return Math.max(totalDuration, minRequiredDuration);
+  }, [timelineMarkers, totalDuration]);
+
   // Don't render if no temporal waypoints
   if (timelineMarkers.length === 0) return null;
 
@@ -87,7 +98,7 @@ export function TemporalTimeline({
           Línea Temporal
         </span>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          0 min → {totalDuration} min
+          0 min → {Math.round(effectiveDuration)} min
         </span>
       </div>
 
@@ -101,7 +112,7 @@ export function TemporalTimeline({
         {/* Markers */}
         {timelineMarkers.map((marker, idx) => {
           // Calculate position (percentage from left)
-          const leftPercent = Math.min(100, Math.max(0, (marker.time / totalDuration) * 100));
+          const leftPercent = Math.min(100, Math.max(0, (marker.time / effectiveDuration) * 100));
 
           return (
             <div
@@ -136,17 +147,12 @@ export function TemporalTimeline({
         })}
       </div>
 
-      {/* Summary info */}
-      <div className="mt-2 flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400">
-        <span>
-          {timelineMarkers.length} waypoint{timelineMarkers.length !== 1 ? 's' : ''} temporal{timelineMarkers.length !== 1 ? 'es' : ''}
-        </span>
-        {timelineMarkers.length > 0 && (
-          <span>
-            Último: T+{timelineMarkers[timelineMarkers.length - 1].time} min
-          </span>
-        )}
-      </div>
+      {/* Summary - only show last marker time */}
+      {timelineMarkers.length > 0 && (
+        <div className="mt-1 text-right text-[10px] text-gray-500 dark:text-gray-400">
+          Último: T+{timelineMarkers[timelineMarkers.length - 1].time} min
+        </div>
+      )}
     </div>
   );
-}
+});

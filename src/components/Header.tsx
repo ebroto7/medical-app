@@ -14,7 +14,7 @@ const navLinks = [
   { href: "#faq", label: "Preguntas" },
 ];
 
-export function Header() {
+export const Header = React.memo(function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, role, signOut } = useAuth();
   const router = useRouter();
@@ -165,4 +165,4 @@ export function Header() {
       )}
     </header>
   );
-}
+});

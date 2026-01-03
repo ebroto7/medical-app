@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,8 +66,23 @@ export default function PatientNutritionistsPage() {
     fetchData();
   }, []);
 
-  const handleAccept = async (requestId: string) => {
+  const handleAccept = useCallback(async (requestId: string) => {
+    // Find the request to get nutritionist info for optimistic update
+    const request = pendingRequests.find(r => r.id === requestId);
+    if (!request) return;
+
     setActionLoading(requestId);
+
+    // Optimistic update
+    const previousPending = pendingRequests;
+    const previousConnected = connectedNutritionists;
+    setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+    setConnectedNutritionists(prev => [...prev, {
+      id: request.nutritionist.id,
+      fullName: request.nutritionist.fullName,
+      email: request.nutritionist.email,
+    }]);
+
     try {
       const response = await fetch("/api/nutrition/accept-request", {
         method: "POST",
@@ -75,35 +90,43 @@ export default function PatientNutritionistsPage() {
         body: JSON.stringify({ requestId }),
       });
 
-      if (response.ok) {
-        setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
-        // Refresh connected nutritionists
-        const connectedRes = await fetch("/api/nutrition/connected-nutritionists");
-        const connectedData = await connectedRes.json();
-        setConnectedNutritionists(connectedData.data || []);
-      } else if (response.status === 409) {
-        const data = await response.json();
-        alert(data.error || "Ya tienes un nutricionista vinculado");
-      } else {
-        alert("Error al aceptar la solicitud");
+      if (!response.ok) {
+        // Rollback on error
+        setPendingRequests(previousPending);
+        setConnectedNutritionists(previousConnected);
+        if (response.status === 409) {
+          const data = await response.json();
+          alert(data.error || "Ya tienes un nutricionista vinculado");
+        } else {
+          alert("Error al aceptar la solicitud");
+        }
       }
     } catch (error) {
+      // Rollback on error
+      setPendingRequests(previousPending);
+      setConnectedNutritionists(previousConnected);
       console.error("Error:", error);
       alert("Error al aceptar la solicitud");
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [pendingRequests, connectedNutritionists]);
 
-  const openDisconnectDialog = (nutritionist: ConnectedNutritionist) => {
+  const openDisconnectDialog = useCallback((nutritionist: ConnectedNutritionist) => {
     setSelectedNutritionist(nutritionist);
     setDisconnectDialogOpen(true);
-  };
+  }, []);
 
-  const handleDisconnect = async () => {
+  const handleDisconnect = useCallback(async () => {
     if (!selectedNutritionist) return;
 
     setActionLoading(selectedNutritionist.id);
+
+    // Optimistic update
+    const previousConnected = connectedNutritionists;
+    setConnectedNutritionists(prev => prev.filter(n => n.id !== selectedNutritionist.id));
+    setDisconnectDialogOpen(false);
+
     try {
       const response = await fetch("/api/nutrition/disconnect", {
         method: "DELETE",
@@ -111,30 +134,37 @@ export default function PatientNutritionistsPage() {
         body: JSON.stringify({ otherUserId: selectedNutritionist.id }),
       });
 
-      if (response.ok) {
-        setConnectedNutritionists((prev) => prev.filter((n) => n.id !== selectedNutritionist.id));
-        setDisconnectDialogOpen(false);
-        setSelectedNutritionist(null);
-      } else {
+      if (!response.ok) {
+        // Rollback on error
+        setConnectedNutritionists(previousConnected);
         alert("Error al desconectar");
       }
+      setSelectedNutritionist(null);
     } catch (error) {
+      // Rollback on error
+      setConnectedNutritionists(previousConnected);
       console.error("Error:", error);
       alert("Error al desconectar");
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [selectedNutritionist, connectedNutritionists]);
 
-  const openRejectDialog = (request: PendingRequest) => {
+  const openRejectDialog = useCallback((request: PendingRequest) => {
     setSelectedRequest(request);
     setRejectDialogOpen(true);
-  };
+  }, []);
 
-  const handleReject = async () => {
+  const handleReject = useCallback(async () => {
     if (!selectedRequest) return;
 
     setActionLoading(selectedRequest.id);
+
+    // Optimistic update
+    const previousPending = pendingRequests;
+    setPendingRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
+    setRejectDialogOpen(false);
+
     try {
       const response = await fetch("/api/nutrition/reject-request", {
         method: "POST",
@@ -142,20 +172,21 @@ export default function PatientNutritionistsPage() {
         body: JSON.stringify({ requestId: selectedRequest.id }),
       });
 
-      if (response.ok) {
-        setPendingRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
-        setRejectDialogOpen(false);
-        setSelectedRequest(null);
-      } else {
+      if (!response.ok) {
+        // Rollback on error
+        setPendingRequests(previousPending);
         alert("Error al rechazar la solicitud");
       }
+      setSelectedRequest(null);
     } catch (error) {
+      // Rollback on error
+      setPendingRequests(previousPending);
       console.error("Error:", error);
       alert("Error al rechazar la solicitud");
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [selectedRequest, pendingRequests]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES", {

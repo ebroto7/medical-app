@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, List, Loader2 } from "lucide-react";
@@ -24,7 +24,7 @@ interface MealPlansListProps {
   onRefresh?: number;
 }
 
-export function MealPlansList({
+export const MealPlansList = React.memo(function MealPlansList({
   patientId,
   showPatientName = false,
   canEdit = false,
@@ -140,4 +140,4 @@ export function MealPlansList({
       )}
     </>
   );
-}
+});

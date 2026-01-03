@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/types/database";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -36,7 +36,7 @@ interface PatientMonthViewProps {
   onDateChange: (date: Date) => void;
 }
 
-export function PatientMonthView({ patientId, selectedDate, onDateChange }: PatientMonthViewProps) {
+export const PatientMonthView = React.memo(function PatientMonthView({ patientId, selectedDate, onDateChange }: PatientMonthViewProps) {
   const [indicators, setIndicators] = useState<DayIndicators>({});
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate);
@@ -207,4 +207,4 @@ export function PatientMonthView({ patientId, selectedDate, onDateChange }: Pati
       </div>
     </div>
   );
-}
+});

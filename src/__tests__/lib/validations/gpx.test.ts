@@ -225,7 +225,7 @@ describe('GPX Validation Schemas', () => {
         longitude: 2.1734,
         elevation_m: 100,
         distance_from_start_km: 5.5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
         product_name: 'SIS Isotonic Gel',
         calories: 87,
         carbs: 22,
@@ -250,7 +250,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'hydration' as const,
+        name: 'Hydration',
       };
 
       const result = createWaypointSchema.safeParse(minimalWaypoint);
@@ -261,7 +261,7 @@ describe('GPX Validation Schemas', () => {
       const timeOnlyWaypoint = {
         type: 'temporal' as const,
         trigger_time_min: 30,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
       };
 
       const result = createWaypointSchema.safeParse(timeOnlyWaypoint);
@@ -273,7 +273,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
       };
 
       const result = createWaypointSchema.safeParse(noType);
@@ -286,7 +286,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 91, // Out of range
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'hydration' as const,
+        name: 'Hydration',
       };
 
       const result = createWaypointSchema.safeParse(invalidLat);
@@ -302,7 +302,7 @@ describe('GPX Validation Schemas', () => {
           latitude: lat,
           longitude: 0,
           distance_from_start_km: 1,
-          nutrition_type: 'hydration' as const,
+          name: 'Hydration',
         };
         const result = createWaypointSchema.safeParse(waypoint);
         expect(result.success).toBe(true);
@@ -315,7 +315,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 181, // Out of range
         distance_from_start_km: 5,
-        nutrition_type: 'hydration' as const,
+        name: 'Hydration',
       };
 
       const result = createWaypointSchema.safeParse(invalidLon);
@@ -331,7 +331,7 @@ describe('GPX Validation Schemas', () => {
           latitude: 0,
           longitude: lon,
           distance_from_start_km: 1,
-          nutrition_type: 'hydration' as const,
+          name: 'Hydration',
         };
         const result = createWaypointSchema.safeParse(waypoint);
         expect(result.success).toBe(true);
@@ -344,7 +344,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: -5,
-        nutrition_type: 'hydration' as const,
+        name: 'Hydration',
       };
 
       const result = createWaypointSchema.safeParse(negativeDist);
@@ -355,7 +355,7 @@ describe('GPX Validation Schemas', () => {
       const negativeTime = {
         type: 'temporal' as const,
         trigger_time_min: -30,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
       };
 
       const result = createWaypointSchema.safeParse(negativeTime);
@@ -366,47 +366,45 @@ describe('GPX Validation Schemas', () => {
       const floatTime = {
         type: 'temporal' as const,
         trigger_time_min: 30.5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
       };
 
       const result = createWaypointSchema.safeParse(floatTime);
       expect(result.success).toBe(false);
     });
 
-    it('should accept all valid nutrition types', () => {
-      const nutritionTypes = [
-        'hydration',
-        'isotonic_drink',
-        'energy_gel',
-        'solid_food',
-        'salt_caps',
-        'caffeine',
-        'custom',
+    it('should accept any string as name (free-form)', () => {
+      const waypointNames = [
+        'Hydration',
+        'Energy Gel',
+        'Custom Product 123',
+        'Bebida isotónica',
+        'Any free-form text',
       ];
 
-      nutritionTypes.forEach((type) => {
+      waypointNames.forEach((name) => {
         const waypoint = {
           type: 'spatial' as const,
           latitude: 41.3851,
           longitude: 2.1734,
           distance_from_start_km: 5,
-          nutrition_type: type,
+          name: name,
         };
         const result = createWaypointSchema.safeParse(waypoint);
         expect(result.success).toBe(true);
       });
     });
 
-    it('should reject invalid nutrition type', () => {
-      const invalidType = {
+    it('should reject empty name', () => {
+      const emptyName = {
         type: 'spatial' as const,
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'invalid_type',
+        name: '',
       };
 
-      const result = createWaypointSchema.safeParse(invalidType);
+      const result = createWaypointSchema.safeParse(emptyName);
       expect(result.success).toBe(false);
     });
 
@@ -416,7 +414,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
         calories: -100,
       };
 
@@ -430,7 +428,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
         calories: 87.5,
       };
 
@@ -444,7 +442,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
         carbs: -10,
       };
 
@@ -458,7 +456,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
         product_name: 'A'.repeat(201),
       };
 
@@ -472,7 +470,7 @@ describe('GPX Validation Schemas', () => {
         latitude: 41.3851,
         longitude: 2.1734,
         distance_from_start_km: 5,
-        nutrition_type: 'energy_gel' as const,
+        name: 'Energy Gel',
         notes: 'A'.repeat(1001),
       };
 
@@ -495,7 +493,7 @@ describe('GPX Validation Schemas', () => {
     it('should validate full nutritional update', () => {
       const update = {
         waypoint_id: '123e4567-e89b-12d3-a456-426614174000',
-        nutrition_type: 'solid_food' as const,
+        name: 'Solid Food',
         product_name: 'Barrita',
         calories: 200,
         carbs: 40,

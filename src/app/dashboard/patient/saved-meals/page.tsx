@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,11 +30,7 @@ export default function SavedMealsPage() {
   const [filterType, setFilterType] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadMeals();
-  }, []);
-
-  const loadMeals = async () => {
+  const loadMeals = useCallback(async () => {
     try {
       const data = await SavedMealsService.getSavedMeals();
       setMeals(data);
@@ -44,18 +40,40 @@ export default function SavedMealsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const handleDelete = async (id: string) => {
+  useEffect(() => {
+    loadMeals();
+  }, [loadMeals]);
+
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm("¿Eliminar esta comida guardada?")) return;
+    // Optimistic update
+    const previousMeals = meals;
+    setMeals(prev => prev.filter((m) => m.id !== id));
     try {
       await SavedMealsService.deleteSavedMeal(id);
-      setMeals(meals.filter((m) => m.id !== id));
       toast({ title: "Comida eliminada" });
     } catch (error) {
+      // Rollback on error
+      setMeals(previousMeals);
       toast({ title: "Error", description: "No se pudo eliminar", variant: "destructive" });
     }
-  };
+  }, [meals, toast]);
+
+  const handleMealSaved = useCallback(() => {
+    // Reload meals after save since the dialog doesn't return the saved meal
+    loadMeals();
+    setEditingMeal(null);
+  }, [loadMeals]);
+
+  const handleSetFilterType = useCallback((type: string | null) => {
+    setFilterType(type);
+  }, []);
+
+  const handleEditMeal = useCallback((meal: SavedMeal) => {
+    setEditingMeal(meal);
+  }, []);
 
   // Filtrar comidas según el tipo seleccionado
   const filteredMeals = filterType
@@ -87,7 +105,7 @@ export default function SavedMealsPage() {
             <Button
               variant={filterType === null ? "default" : "outline"}
               size="sm"
-              onClick={() => setFilterType(null)}
+              onClick={() => handleSetFilterType(null)}
             >
               Todas ({meals.length})
             </Button>
@@ -99,7 +117,7 @@ export default function SavedMealsPage() {
                   key={type}
                   variant={filterType === type ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setFilterType(type)}
+                  onClick={() => handleSetFilterType(type)}
                 >
                   {label} ({count})
                 </Button>
@@ -162,7 +180,7 @@ export default function SavedMealsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => setEditingMeal(meal)}
+                        onClick={() => handleEditMeal(meal)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -187,10 +205,7 @@ export default function SavedMealsPage() {
           initialData={editingMeal || undefined}
           open={!!editingMeal}
           onOpenChange={(open) => !open && setEditingMeal(null)}
-          onSave={() => {
-            loadMeals();
-            setEditingMeal(null);
-          }}
+          onSave={handleMealSaved}
         />
       </div>
     </DashboardLayout>
