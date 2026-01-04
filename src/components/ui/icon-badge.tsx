@@ -14,6 +14,7 @@ const iconBadgeVariants = cva(
         red: "bg-accent-red text-foreground",
         blue: "bg-accent-blue text-foreground",
         purple: "bg-accent-purple text-foreground",
+        rose: "bg-rose-500/20 text-rose-500",
         primary: "bg-primary text-primary-foreground",
         muted: "bg-muted text-muted-foreground",
       },

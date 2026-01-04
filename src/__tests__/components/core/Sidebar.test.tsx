@@ -51,6 +51,7 @@ describe('Sidebar', () => {
 
         expect(screen.getByText('Mi Diario')).toBeInTheDocument();
         expect(screen.getByText('Mis Pautas')).toBeInTheDocument();
+        expect(screen.getByText('Mis Hábitos')).toBeInTheDocument();
         expect(screen.getByText('Nutricionistas')).toBeInTheDocument();
         expect(screen.queryByText('Mis Pacientes')).not.toBeInTheDocument();
     });

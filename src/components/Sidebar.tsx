@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList, Plus, Library, Route } from "lucide-react";
+import { Menu, X, BookOpen, Users, Settings, LogOut, Bell, ClipboardList, Plus, Library, Route, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { IconBadge } from "@/components/ui/icon-badge";
@@ -79,6 +79,7 @@ export const Sidebar = React.memo(function Sidebar({ role }: SidebarProps) {
       ];
     } else {
       return [
+        { label: "Mis Hábitos", icon: Target, href: "/dashboard/patient/habits", color: "rose" as const },
         { label: "Mi Diario", icon: BookOpen, href: "/dashboard/patient", color: "green" as const },
         { label: "Biblioteca de menús", icon: Library, href: "/dashboard/patient/saved-meals", color: "yellow" as const },
         { label: "Mis Pautas", icon: ClipboardList, href: "/dashboard/patient/meal-plans", color: "purple" as const },
