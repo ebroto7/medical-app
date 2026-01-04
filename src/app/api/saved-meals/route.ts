@@ -1,10 +1,12 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
-import { AuthenticationError } from "@/lib/auth/errors";
 import { rateLimit } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
 import { z } from "zod";
-import { ZodError } from "zod";
+import {
+  withErrorHandler,
+  successResponse,
+  createdResponse,
+} from "@/lib/api/error-handler";
 
 const createSavedMealSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),
@@ -17,42 +19,36 @@ const createSavedMealSchema = z.object({
 });
 
 // GET - List saved meals
-export async function GET(request: Request) {
-  try {
-    const user = await requireAuth();
-    const supabase = await createClient();
+export const GET = withErrorHandler(async () => {
+  const user = await requireAuth();
+  const supabase = await createClient();
 
-    const { data: meals, error } = await supabase
-      .from("saved_meals")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+  const { data: meals, error } = await supabase
+    .from("saved_meals")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
-    if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-
-    return Response.json({ data: meals || [] });
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return Response.json({ error: error.message }, { status: 401 });
-    }
-    logger.error({ error }, "Failed to fetch saved meals");
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+  if (error) {
+    throw new Error(error.message);
   }
-}
+
+  return successResponse(meals || []);
+});
 
 // POST - Create saved meal
 export async function POST(request: Request) {
-  try {
-    const rateLimitResult = rateLimit(request, 'api');
-    if (!rateLimitResult.success) {
-      return Response.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429, headers: rateLimitResult.headers }
-      );
-    }
+  // Rate limiting check (needs special header handling)
+  const rateLimitResult = rateLimit(request, 'api');
+  if (!rateLimitResult.success) {
+    return Response.json(
+      { error: 'Rate limit exceeded. Please try again later.' },
+      { status: 429, headers: rateLimitResult.headers }
+    );
+  }
 
+  // Main handler with error handling
+  return withErrorHandler(async () => {
     const user = await requireAuth();
     const body = await request.json();
     const validatedData = createSavedMealSchema.parse(body);
@@ -74,21 +70,9 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      throw new Error(error.message);
     }
 
-    return Response.json({ data: meal }, { status: 201 });
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return Response.json({ error: error.message }, { status: 401 });
-    }
-    if (error instanceof ZodError) {
-      return Response.json(
-        { error: "Validation error", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ error }, "Failed to create saved meal");
-    return Response.json({ error: "Internal server error" }, { status: 500 });
-  }
+    return createdResponse(meal);
+  })(request);
 }

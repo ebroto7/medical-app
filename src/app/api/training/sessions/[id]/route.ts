@@ -1,139 +1,114 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
-import { AuthenticationError } from "@/lib/auth/errors";
+import { OwnershipError } from "@/lib/auth/errors";
 import { rateLimit } from "@/lib/rate-limit";
-import { ZodError } from "zod";
+import { z } from "zod";
+import {
+  withErrorHandler,
+  successResponse,
+  NotFoundError,
+} from "@/lib/api/error-handler";
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+const updateSessionSchema = z.object({
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional(),
+  type: z.enum(["cardio", "strength", "flexibility", "hiit", "yoga", "other"]).optional(),
+  durationMinutes: z.number().int().min(1).max(480).optional(),
+  description: z.string().max(1000).optional().nullable(),
+});
+
+// Helper to verify session ownership
+async function verifySessionOwnership(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string,
+  userId: string
 ) {
-  try {
-    // 1. Apply rate limiting
-    const rateLimitResult = rateLimit(request, 'api');
-    if (!rateLimitResult.success) {
-      return Response.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429, headers: rateLimitResult.headers }
-      );
-    }
+  const { data: existingSession } = await supabase
+    .from("training_sessions")
+    .select("user_id")
+    .eq("id", id)
+    .single();
 
-    // 2. Require authentication
-    const user = await requireAuth();
+  if (!existingSession) {
+    throw new NotFoundError("Session not found");
+  }
 
-    // 3. Parse body
-    const body = await request.json();
-    const { time, type, durationMinutes, description } = body;
-    const { id } = await params;
-
-    const supabase = await createClient();
-
-    // 3. Verify ownership
-    const { data: existingSession } = await supabase
-      .from("training_sessions")
-      .select("user_id")
-      .eq("id", id)
-      .single();
-
-    if (!existingSession) {
-      return Response.json({ error: "Session not found" }, { status: 404 });
-    }
-
-    if (existingSession.user_id !== user.id) {
-      return Response.json(
-        { error: "You do not have permission to update this session" },
-        { status: 403 }
-      );
-    }
-
-    // 4. Validate type if provided
-    const validTypes = ["cardio", "strength", "flexibility", "hiit", "yoga", "other"];
-    if (type && !validTypes.includes(type)) {
-      return Response.json(
-        { error: `Invalid type. Must be one of: ${validTypes.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    // 5. Update
-    const { data, error } = await supabase
-      .from("training_sessions")
-      .update({
-        time: time ?? undefined,
-        type: type ?? undefined,
-        duration_minutes: durationMinutes ?? null,
-        description: description ?? null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .select();
-
-    if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-
-    return Response.json({ data: data[0] });
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return Response.json({ error: error.message }, { status: 401 });
-    }
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+  if (existingSession.user_id !== userId) {
+    throw new OwnershipError("You don't own this session");
   }
 }
 
-export async function DELETE(
+// PUT - Update training session
+export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    // 1. Apply rate limiting
-    const rateLimitResult = rateLimit(request, 'api');
-    if (!rateLimitResult.success) {
-      return Response.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429, headers: rateLimitResult.headers }
-      );
-    }
+  const rateLimitResult = rateLimit(request, 'api');
+  if (!rateLimitResult.success) {
+    return Response.json(
+      { error: 'Rate limit exceeded. Please try again later.' },
+      { status: 429, headers: rateLimitResult.headers }
+    );
+  }
 
-    // 2. Require authentication
+  return withErrorHandler(async () => {
     const user = await requireAuth();
+    const { id } = await context.params;
+    const body = await request.json();
+    const validatedData = updateSessionSchema.parse(body);
 
-    const { id } = await params;
     const supabase = await createClient();
+    await verifySessionOwnership(supabase, id, user.id);
 
-    // 3. Verify ownership
-    const { data: existingSession } = await supabase
+    const { data, error } = await supabase
       .from("training_sessions")
-      .select("user_id")
+      .update({
+        time: validatedData.time,
+        type: validatedData.type,
+        duration_minutes: validatedData.durationMinutes ?? null,
+        description: validatedData.description ?? null,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", id)
+      .select()
       .single();
 
-    if (!existingSession) {
-      return Response.json({ error: "Session not found" }, { status: 404 });
+    if (error) {
+      throw new Error(error.message);
     }
 
-    if (existingSession.user_id !== user.id) {
-      return Response.json(
-        { error: "You do not have permission to delete this session" },
-        { status: 403 }
-      );
-    }
+    return successResponse(data);
+  })(request, context);
+}
 
-    // 3. Delete
+// DELETE - Delete training session
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const rateLimitResult = rateLimit(request, 'api');
+  if (!rateLimitResult.success) {
+    return Response.json(
+      { error: 'Rate limit exceeded. Please try again later.' },
+      { status: 429, headers: rateLimitResult.headers }
+    );
+  }
+
+  return withErrorHandler(async () => {
+    const user = await requireAuth();
+    const { id } = await context.params;
+
+    const supabase = await createClient();
+    await verifySessionOwnership(supabase, id, user.id);
+
     const { error } = await supabase
       .from("training_sessions")
       .delete()
       .eq("id", id);
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      throw new Error(error.message);
     }
 
-    return Response.json({ message: "Session deleted" });
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return Response.json({ error: error.message }, { status: 401 });
-    }
-    return Response.json({ error: "Internal server error" }, { status: 500 });
-  }
+    return successResponse({ deleted: true });
+  })(request, context);
 }

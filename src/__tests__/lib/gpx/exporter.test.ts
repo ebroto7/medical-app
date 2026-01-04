@@ -334,7 +334,7 @@ describe('GPX Exporter', () => {
 
       const result = generateGPXWithNutrition(mockTrack, fullNutritionWaypoint, 'Test Plan');
 
-      const desc = result.match(/<desc>(.*?)<\/desc>/s)?.[1] || '';
+      const desc = result.match(/<desc>([\s\S]*?)<\/desc>/)?.[1] || '';
       expect(desc).toContain('200 kcal');
       expect(desc).toContain('40g carbs');
       expect(desc).toContain('5g prot');

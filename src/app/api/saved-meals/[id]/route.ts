@@ -1,10 +1,13 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
-import { AuthenticationError } from "@/lib/auth/errors";
+import { OwnershipError } from "@/lib/auth/errors";
 import { rateLimit } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
 import { z } from "zod";
-import { ZodError } from "zod";
+import {
+  withErrorHandler,
+  successResponse,
+  NotFoundError,
+} from "@/lib/api/error-handler";
 
 const updateSavedMealSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -16,41 +19,45 @@ const updateSavedMealSchema = z.object({
   fat: z.number().min(0).max(1000).optional(),
 });
 
+// Helper to verify ownership
+async function verifyMealOwnership(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
+  const { data: existingMeal } = await supabase
+    .from("saved_meals")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (!existingMeal) {
+    throw new NotFoundError("Saved meal not found");
+  }
+
+  if (existingMeal.user_id !== userId) {
+    throw new OwnershipError("You don't own this meal");
+  }
+}
+
 // PATCH - Update saved meal
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const rateLimitResult = rateLimit(request, 'api');
-    if (!rateLimitResult.success) {
-      return Response.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429, headers: rateLimitResult.headers }
-      );
-    }
+  // Rate limiting check
+  const rateLimitResult = rateLimit(request, 'api');
+  if (!rateLimitResult.success) {
+    return Response.json(
+      { error: 'Rate limit exceeded. Please try again later.' },
+      { status: 429, headers: rateLimitResult.headers }
+    );
+  }
 
+  return withErrorHandler(async () => {
     const user = await requireAuth();
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
     const validatedData = updateSavedMealSchema.parse(body);
 
     const supabase = await createClient();
-
-    // Verify ownership
-    const { data: existingMeal } = await supabase
-      .from("saved_meals")
-      .select("user_id")
-      .eq("id", id)
-      .single();
-
-    if (!existingMeal) {
-      return Response.json({ error: "Saved meal not found" }, { status: 404 });
-    }
-
-    if (existingMeal.user_id !== user.id) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
-    }
+    await verifyMealOwnership(supabase, id, user.id);
 
     const { data: meal, error } = await supabase
       .from("saved_meals")
@@ -60,58 +67,33 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      throw new Error(error.message);
     }
 
-    return Response.json({ data: meal });
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return Response.json({ error: error.message }, { status: 401 });
-    }
-    if (error instanceof ZodError) {
-      return Response.json(
-        { error: "Validation error", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ error }, "Failed to update saved meal");
-    return Response.json({ error: "Internal server error" }, { status: 500 });
-  }
+    return successResponse(meal);
+  })(request, context);
 }
 
 // DELETE - Delete saved meal
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const rateLimitResult = rateLimit(request, 'api');
-    if (!rateLimitResult.success) {
-      return Response.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429, headers: rateLimitResult.headers }
-      );
-    }
+  // Rate limiting check
+  const rateLimitResult = rateLimit(request, 'api');
+  if (!rateLimitResult.success) {
+    return Response.json(
+      { error: 'Rate limit exceeded. Please try again later.' },
+      { status: 429, headers: rateLimitResult.headers }
+    );
+  }
 
+  return withErrorHandler(async () => {
     const user = await requireAuth();
-    const { id } = await params;
+    const { id } = await context.params;
 
     const supabase = await createClient();
-
-    // Verify ownership
-    const { data: existingMeal } = await supabase
-      .from("saved_meals")
-      .select("user_id")
-      .eq("id", id)
-      .single();
-
-    if (!existingMeal) {
-      return Response.json({ error: "Saved meal not found" }, { status: 404 });
-    }
-
-    if (existingMeal.user_id !== user.id) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
-    }
+    await verifyMealOwnership(supabase, id, user.id);
 
     const { error } = await supabase
       .from("saved_meals")
@@ -119,15 +101,9 @@ export async function DELETE(
       .eq("id", id);
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      throw new Error(error.message);
     }
 
-    return Response.json({ success: true });
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      return Response.json({ error: error.message }, { status: 401 });
-    }
-    logger.error({ error }, "Failed to delete saved meal");
-    return Response.json({ error: "Internal server error" }, { status: 500 });
-  }
+    return successResponse({ deleted: true });
+  })(request, context);
 }

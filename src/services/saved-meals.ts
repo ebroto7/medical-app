@@ -5,6 +5,7 @@
  */
 
 import { Database } from '@/types/database';
+import { logError } from '@/lib/client-logger';
 
 type SavedMeal = Database['public']['Tables']['saved_meals']['Row'];
 type SavedMealInsert = Database['public']['Tables']['saved_meals']['Insert'];
@@ -20,7 +21,7 @@ export const SavedMealsService = {
 
         if (!response.ok) {
             const error = await response.json();
-            console.error('Error fetching saved meals:', error);
+            logError('Error fetching saved meals', error);
             throw new Error(error.error || 'Error fetching saved meals');
         }
 
@@ -39,7 +40,7 @@ export const SavedMealsService = {
 
         if (!response.ok) {
             const error = await response.json();
-            console.error('Error creating saved meal:', error);
+            logError('Error creating saved meal', error);
             throw new Error(error.error || 'Error creating saved meal');
         }
 
@@ -57,7 +58,7 @@ export const SavedMealsService = {
 
         if (!response.ok) {
             const error = await response.json();
-            console.error('Error deleting saved meal:', error);
+            logError('Error deleting saved meal', error, { id });
             throw new Error(error.error || 'Error deleting saved meal');
         }
     },
@@ -73,7 +74,7 @@ export const SavedMealsService = {
 
         if (!response.ok) {
             const error = await response.json();
-            console.error('Error updating saved meal:', error);
+            logError('Error updating saved meal', error, { id });
             throw new Error(error.error || 'Error updating saved meal');
         }
 

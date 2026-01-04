@@ -23,7 +23,7 @@ describe('Waypoint Type Guards', () => {
         trigger_time_min: null,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'energy_gel',
+        name: 'Energy Gel',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -42,7 +42,7 @@ describe('Waypoint Type Guards', () => {
         trigger_time_min: 60,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'hydration',
+        name: 'Hydration',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -63,7 +63,7 @@ describe('Waypoint Type Guards', () => {
         trigger_time_min: 60,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'hydration',
+        name: 'Hydration',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -87,7 +87,7 @@ describe('Waypoint Type Guards', () => {
           repetitions: 5,
         },
         color: '#3b82f6',
-        nutrition_type: 'isotonic_drink',
+        name: 'Isotonic Drink',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -106,7 +106,7 @@ describe('Waypoint Type Guards', () => {
         trigger_time_min: null,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'energy_gel',
+        name: 'Energy Gel',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -132,7 +132,7 @@ describe('Waypoint Type Guards', () => {
           repetitions: 5,
         },
         color: '#3b82f6',
-        nutrition_type: 'isotonic_drink',
+        name: 'Isotonic Drink',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -151,7 +151,7 @@ describe('Waypoint Type Guards', () => {
         trigger_time_min: 60,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'hydration',
+        name: 'Hydration',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -170,7 +170,7 @@ describe('Waypoint Type Guards', () => {
         trigger_time_min: null,
         is_repeating: false,
         repeat_config: null,
-        nutrition_type: 'energy_gel',
+        name: 'Energy Gel',
         created_at: '2025-01-01T00:00:00Z',
       };
 
@@ -197,7 +197,7 @@ describe('expandTemporalLoop', () => {
         repetitions: 5,
       },
       color: '#3b82f6',
-      nutrition_type: 'isotonic_drink',
+      name: 'Isotonic Drink',
       product_name: 'Maurten Drink Mix',
       created_at: '2025-01-01T00:00:00Z',
     };
@@ -216,7 +216,7 @@ describe('expandTemporalLoop', () => {
       expect(item.id).toBe('loop-1');
       expect(item.product_name).toBe('Maurten Drink Mix');
       expect(item.color).toBe('#3b82f6');
-      expect(item.nutrition_type).toBe('isotonic_drink');
+      expect(item.name).toBe('Isotonic Drink');
     });
   });
 
@@ -237,7 +237,7 @@ describe('expandTemporalLoop', () => {
         repetitions: 3,
       },
       color: '#ff5733',
-      nutrition_type: 'hydration',
+      name: 'Hydration',
       created_at: '2025-01-01T00:00:00Z',
     };
 
@@ -266,7 +266,7 @@ describe('expandTemporalLoop', () => {
         repetitions: 1,
       },
       color: '#00ff00',
-      nutrition_type: 'energy_gel',
+      name: 'Energy Gel',
       created_at: '2025-01-01T00:00:00Z',
     };
 
@@ -293,7 +293,7 @@ describe('expandTemporalLoop', () => {
         repetitions: 4,
       },
       color: '#ffff00',
-      nutrition_type: 'salt_caps',
+      name: 'Salt Caps',
       created_at: '2025-01-01T00:00:00Z',
     };
 
@@ -323,7 +323,7 @@ describe('expandTemporalLoop', () => {
         repetitions: 2,
       },
       color: '#ff00ff',
-      nutrition_type: 'energy_gel',
+      name: 'Energy Gel',
       product_name: 'Test Gel',
       calories: 100,
       carbs: 25,
@@ -348,7 +348,7 @@ describe('expandTemporalLoop', () => {
       plan_id: 'plan-1',
       type: 'temporal',
       color: '#ff00ff',
-      nutrition_type: 'energy_gel',
+      name: 'Energy Gel',
       product_name: 'Test Gel',
       calories: 100,
       carbs: 25,

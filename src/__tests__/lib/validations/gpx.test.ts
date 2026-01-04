@@ -127,7 +127,7 @@ describe('GPX Validation Schemas', () => {
     });
 
     it('should accept all valid sport types', () => {
-      const sportTypes = ['running', 'cycling', 'triathlon', 'hiking', 'other'];
+      const sportTypes = ['running', 'trail_running', 'cycling', 'mtb', 'hiking', 'swimming', 'triathlon', 'other'];
 
       sportTypes.forEach((sportType) => {
         const plan = { name: 'Test', sport_type: sportType };
@@ -139,7 +139,7 @@ describe('GPX Validation Schemas', () => {
     it('should reject invalid sport type', () => {
       const invalidSport = {
         name: 'Test',
-        sport_type: 'swimming',
+        sport_type: 'basketball',
       };
 
       const result = createGPXPlanSchema.safeParse(invalidSport);

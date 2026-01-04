@@ -158,7 +158,7 @@ describe('Sidebar', () => {
         fireEvent.click(newEntryButton);
 
         expect(capturedEvent).not.toBeNull();
-        expect(capturedEvent?.detail).toEqual({ defaultTab: 'meal' });
+        expect((capturedEvent as unknown as CustomEvent).detail).toEqual({ defaultTab: 'meal' });
 
         window.removeEventListener('openCreateEntryDialog', eventListener);
     });
