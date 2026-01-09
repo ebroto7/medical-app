@@ -22,9 +22,9 @@ export default function HabitsPage() {
   const [heatmapMonth, setHeatmapMonth] = useState(new Date());
   const { toast } = useToast();
 
-  const fetchHabits = useCallback(async () => {
+  const fetchHabits = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const dateStr = selectedDate.toISOString().split("T")[0];
       const monthStr = heatmapMonth.toISOString().slice(0, 7); // YYYY-MM
       const res = await fetch(`/api/habits?date=${dateStr}&month=${monthStr}`);
@@ -39,7 +39,7 @@ export default function HabitsPage() {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [toast, selectedDate, heatmapMonth]);
 
@@ -66,8 +66,8 @@ export default function HabitsPage() {
       } else {
         await fetch(`/api/habits/${habitId}/log?date=${dateStr}`, { method: "DELETE" });
       }
-      // Refresh habits
-      await fetchHabits();
+      // Refresh habits silently to avoid flicker
+      await fetchHabits(true);
     } catch (error) {
       console.error(error);
       toast({
@@ -76,6 +76,26 @@ export default function HabitsPage() {
         variant: "destructive",
       });
       throw error; // Re-throw for optimistic update rollback
+    }
+  };
+
+  const handleComment = async (habitId: string, comment: string, date?: string) => {
+    const dateStr = date || selectedDate.toISOString().split("T")[0];
+    try {
+      await fetch(`/api/habits/${habitId}/log`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: dateStr, comment })
+      });
+      await fetchHabits(true);
+      toast({ title: "Comentario guardado" });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el comentario",
+        variant: "destructive",
+      });
     }
   };
 
@@ -245,6 +265,7 @@ export default function HabitsPage() {
                     <HabitsList
                       habits={habits}
                       onToggle={handleToggle}
+                      onComment={handleComment}
                       onEdit={openEditDialog}
                       onDelete={handleDelete}
                       dateLabel={selectedDate.toDateString() === new Date().toDateString() ? "Hoy" : selectedDate.toLocaleDateString("es-ES", { day: 'numeric', month: 'short' })}

@@ -39,6 +39,7 @@ interface CreateHabitDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: { name: string; icon: string; color: string; is_private: boolean }) => Promise<void>;
   editingHabit?: Habit | null;
+  hidePrivacy?: boolean;
 }
 
 export function CreateHabitDialog({
@@ -46,6 +47,7 @@ export function CreateHabitDialog({
   onOpenChange,
   onSubmit,
   editingHabit,
+  hidePrivacy = false,
 }: CreateHabitDialogProps) {
   const [name, setName] = useState(editingHabit?.name || "");
   const [icon, setIcon] = useState(editingHabit?.icon || "✓");
@@ -59,9 +61,9 @@ export function CreateHabitDialog({
       setName(editingHabit?.name || "");
       setIcon(editingHabit?.icon || "✓");
       setColor(editingHabit?.color || DEFAULT_HABIT_COLOR);
-      setIsPrivate(editingHabit?.is_private || false);
+      setIsPrivate(hidePrivacy ? false : (editingHabit?.is_private || false));
     }
-  }, [open, editingHabit]);
+  }, [open, editingHabit, hidePrivacy]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,28 +209,30 @@ export function CreateHabitDialog({
           </div>
 
           {/* Privacy Toggle changed to Tabs */}
-          <div className="space-y-3">
-             <Label>Privacidad</Label>
-             <Tabs 
-               value={isPrivate ? "private" : "public"} 
-               onValueChange={(v) => setIsPrivate(v === "private")}
-               className="w-full"
-             >
-               <TabsList className="grid w-full grid-cols-2">
-                 <TabsTrigger value="public" className="gap-2">
-                   <Globe className="w-4 h-4" /> Público
-                 </TabsTrigger>
-                 <TabsTrigger value="private" className="gap-2">
-                   <Lock className="w-4 h-4" /> Privado
-                 </TabsTrigger>
-               </TabsList>
-             </Tabs>
-             <p className="text-xs text-muted-foreground">
-                {isPrivate 
-                  ? "Solo tú podrás ver este hábito y su progreso." 
-                  : "Tu nutricionista podrá ver este hábito y ayudarte en el seguimiento."}
-             </p>
-          </div>
+          {!hidePrivacy && (
+            <div className="space-y-3">
+               <Label>Privacidad</Label>
+               <Tabs 
+                 value={isPrivate ? "private" : "public"} 
+                 onValueChange={(v) => setIsPrivate(v === "private")}
+                 className="w-full"
+               >
+                 <TabsList className="grid w-full grid-cols-2">
+                   <TabsTrigger value="public" className="gap-2">
+                     <Globe className="w-4 h-4" /> Público
+                   </TabsTrigger>
+                   <TabsTrigger value="private" className="gap-2">
+                     <Lock className="w-4 h-4" /> Privado
+                   </TabsTrigger>
+                 </TabsList>
+               </Tabs>
+               <p className="text-xs text-muted-foreground">
+                  {isPrivate 
+                    ? "Solo tú podrás ver este hábito y su progreso." 
+                    : "Tu nutricionista podrá ver este hábito y ayudarte en el seguimiento."}
+               </p>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">

@@ -10,12 +10,14 @@ interface HabitHeatmapProps {
   habits: Habit[];
   currentDate: Date;
   onToggle: (habitId: string, completed: boolean, date?: string) => Promise<void>;
+  readOnly?: boolean;
 }
 
 export function HabitHeatmap({
   habits,
   currentDate,
   onToggle,
+  readOnly,
 }: HabitHeatmapProps) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -86,7 +88,10 @@ export function HabitHeatmap({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
-                              onClick={() => onToggle(habit.id, !isCompleted, dateStr)}
+                              onClick={() => {
+                      if (readOnly) return;
+                      onToggle(habit.id, !isCompleted, dateStr);
+                    }}
                               className={cn(
                                 "aspect-square rounded-sm transition-all duration-200",
                                 isCompleted 

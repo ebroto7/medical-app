@@ -7,11 +7,14 @@ import { Sidebar } from "./Sidebar";
 
 interface DashboardLayoutProps {
   children: ReactNode;
+  role?: string | null;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user, role, isLoading } = useAuth();
+export function DashboardLayout({ children, role: roleOverride }: DashboardLayoutProps) {
+  const { user, role: authRole, isLoading } = useAuth();
   const router = useRouter();
+  
+  const currentRole = roleOverride || authRole;
 
   // Active redirect if auth fails/clears
   useEffect(() => {
@@ -37,7 +40,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role={role} />
+      <Sidebar role={currentRole} />
 
       <main className="flex-1 transition-all duration-300">
         <div className="p-4 md:p-8 max-w-7xl mx-auto">

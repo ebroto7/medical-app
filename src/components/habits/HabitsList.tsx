@@ -7,8 +7,10 @@ import { Target } from "lucide-react";
 interface HabitsListProps {
   habits: Habit[];
   onToggle: (habitId: string, completed: boolean, date?: string) => Promise<void>;
+  onComment: (habitId: string, comment: string, date?: string) => Promise<void>;
   onEdit: (habit: Habit) => void;
   onDelete: (habitId: string) => void;
+  readOnly?: boolean;
   isLoading?: boolean;
   dateLabel?: string;
 }
@@ -16,8 +18,10 @@ interface HabitsListProps {
 export const HabitsList = React.memo(function HabitsList({
   habits,
   onToggle,
+  onComment,
   onEdit,
   onDelete,
+  readOnly,
   isLoading,
   dateLabel = "Hoy",
 }: HabitsListProps) {
@@ -64,8 +68,10 @@ export const HabitsList = React.memo(function HabitsList({
             key={habit.id}
             habit={habit}
             onToggle={onToggle}
+            onComment={onComment}
             onEdit={onEdit}
             onDelete={onDelete}
+            readOnly={readOnly}
             isLoading={isLoading}
           />
         ))}

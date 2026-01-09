@@ -63,7 +63,8 @@ export async function GET(request: Request) {
         *,
         habit_logs (
           id,
-          completed_at
+          completed_at,
+          comment
         )
       `
       )

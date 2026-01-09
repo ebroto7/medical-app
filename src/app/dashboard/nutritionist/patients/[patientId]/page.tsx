@@ -10,7 +10,7 @@ import { CalendarViewSelector } from "@/components/calendar/CalendarViewSelector
 import { PatientDayView } from "@/components/calendar/PatientDayView";
 import { PatientWeekView } from "@/components/calendar/PatientWeekView";
 import { PatientMonthView } from "@/components/calendar/PatientMonthView";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Target } from "lucide-react";
 
 type CalendarView = "day" | "week" | "month";
 
@@ -36,12 +36,20 @@ export default function PatientDiaryPage() {
             <h1 className="text-3xl font-bold text-gray-900">Diario del Paciente</h1>
             <p className="text-gray-600 mt-2">Visualiza el diario nutricional y entrenamientos del paciente</p>
           </div>
-          <Link href={`/dashboard/nutritionist/patients/${patientId}/meal-plans`}>
-            <Button variant="outline" className="gap-2">
-              <ClipboardList className="h-4 w-4" />
-              Gestionar Pautas
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/dashboard/nutritionist/patients/${patientId}/habits`}>
+              <Button variant="outline" className="gap-2">
+                <Target className="h-4 w-4" />
+                Hábitos
+              </Button>
+            </Link>
+            <Link href={`/dashboard/nutritionist/patients/${patientId}/meal-plans`}>
+              <Button variant="outline" className="gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Gestionar Pautas
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* View Selector */}

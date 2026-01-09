@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Flame, MoreVertical, Pencil, Trash2, Lock, Globe } from "lucide-react";
+import { Check, Flame, MoreVertical, Pencil, Trash2, Lock, Globe, MessageSquare, Stethoscope } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { HABIT_COLORS, HabitColor, DEFAULT_HABIT_COLOR } from "@/lib/constants/habits";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Habit {
   id: string;
@@ -23,7 +24,7 @@ export interface Habit {
   is_active: boolean;
   currentStreak: number;
   completedToday: boolean;
-  logsThisMonth: { completed_at: string }[];
+  logsThisMonth: { completed_at: string; comment?: string }[];
   is_private?: boolean;
   created_by?: string;
   user_id?: string;
@@ -32,8 +33,10 @@ export interface Habit {
 interface HabitCardProps {
   habit: Habit;
   onToggle: (habitId: string, completed: boolean, date?: string) => Promise<void>;
+  onComment: (habitId: string, comment: string, date?: string) => Promise<void>;
   onEdit: (habit: Habit) => void;
   onDelete: (habitId: string) => void;
+  readOnly?: boolean;
   isLoading?: boolean;
 }
 
@@ -42,8 +45,11 @@ export const HabitCard = React.memo(function HabitCard({
   onToggle,
   onEdit,
   onDelete,
+  onComment,
+  readOnly,
   isLoading,
 }: HabitCardProps) {
+  const { user } = useAuth();
   const [localCompleted, setLocalCompleted] = useState(habit.completedToday);
   const [animating, setAnimating] = useState(false);
 
@@ -51,6 +57,14 @@ export const HabitCard = React.memo(function HabitCard({
   useEffect(() => {
     setLocalCompleted(habit.completedToday);
   }, [habit.completedToday]);
+
+  const handleComment = () => {
+    const existingComment = habit.logsThisMonth.find(l => l.comment)?.comment || "";
+    const comment = window.prompt("Añade un comentario sobre este hábito:", existingComment);
+    if (comment !== null) {
+      onComment(habit.id, comment);
+    }
+  };
 
   // Use centralized colors logic safely
   // Specific styles for completed state
@@ -81,7 +95,7 @@ export const HabitCard = React.memo(function HabitCard({
   const cardBorder = colorConfig.border || "";
 
   const handleToggle = async () => {
-    if (isLoading) return;
+    if (readOnly || isLoading) return;
 
     // Optimistic update
     const newCompleted = !localCompleted;
@@ -98,6 +112,12 @@ export const HabitCard = React.memo(function HabitCard({
     }
   };
 
+  const isAuthor = habit.created_by 
+    ? habit.created_by === user?.id 
+    : habit.user_id === user?.id;
+
+  const isProfessionalHabit = habit.created_by && habit.created_by !== habit.user_id;
+
   return (
     <Card
       className={cn(
@@ -109,9 +129,10 @@ export const HabitCard = React.memo(function HabitCard({
       {/* Check Button */}
       <button
         onClick={handleToggle}
-        disabled={isLoading}
+        disabled={isLoading || readOnly}
         className={cn(
           "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-200",
+          readOnly && "cursor-default opacity-80",
           localCompleted
             ? cn(completedBg, completedText, "border-transparent")
             : `border-muted-foreground/30 hover:border-muted-foreground/50 bg-background`, // Fondo blanco para check no completado para contraste
@@ -126,14 +147,21 @@ export const HabitCard = React.memo(function HabitCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-lg">{habit.icon}</span>
-          <span
-            className={cn(
-              "font-medium truncate flex items-center gap-2",
-              localCompleted && "text-muted-foreground line-through"
+          <div className="flex items-center gap-2">
+            <h3 className={cn(
+              "font-medium transition-all duration-300",
+              localCompleted && "text-muted-foreground"
+            )}>
+              {habit.name}
+            </h3>
+            {isProfessionalHabit && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 border border-blue-200" title="Hábito asignado por tu nutricionista">
+                <Stethoscope size={12} className="shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">PRO</span>
+              </span>
             )}
-          >
-            {habit.name}
-            {habit.is_private ? (
+          </div>
+          {habit.is_private ? (
               <span title="Privado (Solo tú)" className="text-muted-foreground/60">
                 <Lock className="h-3 w-3" />
               </span>
@@ -142,8 +170,20 @@ export const HabitCard = React.memo(function HabitCard({
                  <Globe className="h-3 w-3" />
                </span>
             )}
-          </span>
         </div>
+        {/* Comment area */}
+        {(() => {
+          const logWithComment = habit.logsThisMonth.find(l => l.comment);
+          if (logWithComment?.comment) {
+            return (
+              <div className="flex items-start gap-1.5 mt-1 text-xs text-muted-foreground ml-7">
+                <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                <p className="italic line-clamp-1 truncate">{logWithComment.comment}</p>
+              </div>
+            );
+          }
+          return null;
+        })()}
       </div>
 
       {/* Streak Badge */}
@@ -167,17 +207,23 @@ export const HabitCard = React.memo(function HabitCard({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit(habit)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Editar
+          <DropdownMenuItem onClick={handleComment}>
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Comentar
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => onDelete(habit.id)}
-            className="text-destructive focus:text-destructive"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Eliminar
-          </DropdownMenuItem>
+            {isAuthor && (
+              <>
+                <DropdownMenuItem onClick={() => onEdit(habit)} className="gap-2">
+                  <Pencil size={14} /> Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onDelete(habit.id)} 
+                  className="gap-2 text-destructive focus:text-destructive"
+                >
+                  <Trash2 size={14} /> Eliminar
+                </DropdownMenuItem>
+              </>
+            )}
         </DropdownMenuContent>
       </DropdownMenu>
     </Card>

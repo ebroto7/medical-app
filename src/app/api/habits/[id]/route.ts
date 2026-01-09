@@ -26,16 +26,25 @@ export async function PATCH(
 
     const supabase = await createClient();
 
-    // Verify ownership
+    // Verify authorship: only the creator can modify or delete the habit definition
     const { data: existing } = await supabase
       .from("habits")
-      .select("id")
+      .select("id, created_by, user_id")
       .eq("id", id)
-      .eq("user_id", user.id)
       .single();
 
     if (!existing) {
       return Response.json({ error: "Habit not found" }, { status: 404 });
+    }
+
+    // If there's a created_by, it MUST match the current user.
+    // If createdBy is null (legacy), fallback to user_id ownership.
+    const isAuthor = existing.created_by 
+      ? existing.created_by === user.id 
+      : existing.user_id === user.id;
+
+    if (!isAuthor) {
+      return Response.json({ error: "Unauthorized: only the creator can modify this habit" }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -90,16 +99,25 @@ export async function DELETE(
 
     const supabase = await createClient();
 
-    // Verify ownership
+    // Verify authorship: only the creator can modify or delete the habit definition
     const { data: existing } = await supabase
       .from("habits")
-      .select("id")
+      .select("id, created_by, user_id")
       .eq("id", id)
-      .eq("user_id", user.id)
       .single();
 
     if (!existing) {
       return Response.json({ error: "Habit not found" }, { status: 404 });
+    }
+
+    // If there's a created_by, it MUST match the current user.
+    // If createdBy is null (legacy), fallback to user_id ownership.
+    const isAuthor = existing.created_by 
+      ? existing.created_by === user.id 
+      : existing.user_id === user.id;
+
+    if (!isAuthor) {
+      return Response.json({ error: "Unauthorized: only the creator can delete this habit" }, { status: 403 });
     }
 
     const { error } = await supabase.from("habits").delete().eq("id", id);
