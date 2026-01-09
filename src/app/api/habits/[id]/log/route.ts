@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
-import { requireAuth } from "@/lib/auth/api-helpers";
+import { requireAuth, canAccessPatientData } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
+import { auditSuccess } from "@/services/audit.service";
 import RoleService from "@/services/auth/role.service";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
@@ -16,6 +18,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rateLimitResult = rateLimit(request, "auth");
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: "Rate limit exceeded" },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const { id } = await params;
 
@@ -47,10 +57,17 @@ export async function POST(
 
     const isOwner = habit.user_id === user.id;
     const isNutritionist = role === "nutritionist";
-    
-    // Nutritionist can only interact if habit is not private
-    if (!isOwner && (!isNutritionist || habit.is_private)) {
-      return Response.json({ error: "Access denied" }, { status: 403 });
+
+    // Nutritionist can only interact if habit is not private AND connected to patient
+    if (!isOwner) {
+      if (!isNutritionist || habit.is_private) {
+        return Response.json({ error: "Access denied" }, { status: 403 });
+      }
+      // Verify nutritionist is connected to this patient
+      const hasAccess = await canAccessPatientData(user.id, habit.user_id);
+      if (!hasAccess) {
+        return Response.json({ error: "No tienes acceso a este paciente" }, { status: 403 });
+      }
     }
 
     // Upsert log with optional comment
@@ -85,6 +102,22 @@ export async function POST(
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    // Audit log habit completion/comment
+    await auditSuccess(
+      request,
+      user.id,
+      validated.comment ? "habit.comment" : "habit.log",
+      "habit_log",
+      data.id,
+      {
+        habitId: id,
+        habitOwnerId: habit.user_id,
+        date: completedAt,
+        hasComment: !!validated.comment,
+        isNutritionistAction: !isOwner
+      }
+    );
+
     logger.info({ userId: user.id, habitId: id, date: completedAt }, "Habit logged/commented");
     return Response.json({ data }, { status: 201 });
   } catch (error) {
@@ -108,6 +141,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rateLimitResult = rateLimit(request, "auth");
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: "Rate limit exceeded" },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const { id } = await params;
 
@@ -138,6 +179,16 @@ export async function DELETE(
       logger.error({ error, habitId: id }, "Error unlogging habit");
       return Response.json({ error: error.message }, { status: 500 });
     }
+
+    // Audit log habit unlog
+    await auditSuccess(
+      request,
+      user.id,
+      "habit.unlog",
+      "habit_log",
+      id,
+      { habitId: id, date }
+    );
 
     logger.info({ userId: user.id, habitId: id, date }, "Habit unlogged");
     return Response.json({ success: true });

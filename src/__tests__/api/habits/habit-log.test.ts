@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST, DELETE } from '@/app/api/habits/[id]/log/route';
 import { createClient } from '@/utils/supabase/server';
-import { requireAuth } from '@/lib/auth/api-helpers';
+import { requireAuth, canAccessPatientData } from '@/lib/auth/api-helpers';
 
 vi.mock('@/utils/supabase/server', () => ({
     createClient: vi.fn(),
@@ -13,6 +13,21 @@ vi.mock('@/utils/supabase/server', () => ({
 
 vi.mock('@/lib/auth/api-helpers', () => ({
     requireAuth: vi.fn(),
+    canAccessPatientData: vi.fn(),
+}));
+
+vi.mock('@/lib/rate-limit', () => ({
+    rateLimit: vi.fn(() => ({ success: true, headers: {} })),
+}));
+
+vi.mock('@/services/audit.service', () => ({
+    auditSuccess: vi.fn(),
+}));
+
+vi.mock('@/services/auth/role.service', () => ({
+    default: {
+        getRoleForUser: vi.fn(() => 'patient'),
+    }
 }));
 
 describe('POST /api/habits/[id]/log', () => {
@@ -35,16 +50,23 @@ describe('POST /api/habits/[id]/log', () => {
         mockSupabase.eq.mockReturnValue(mockSupabase);
         mockSupabase.upsert.mockReturnValue(mockSupabase);
 
-        // Habit ownership check
-        mockSupabase.single.mockResolvedValue({ data: { id: 'habit-1' }, error: null });
+        // Habit ownership check - must include user_id for ownership verification
+        mockSupabase.single.mockResolvedValue({
+            data: { id: 'habit-1', user_id: 'user-123', is_private: false },
+            error: null
+        });
 
         vi.mocked(createClient).mockResolvedValue(mockSupabase);
         vi.mocked(requireAuth).mockResolvedValue({ id: 'user-123', email: 'test@example.com' });
     });
 
     it('should log habit completion for today', async () => {
-        mockSupabase.single.mockResolvedValueOnce({ data: { id: 'habit-1' }, error: null }) // ownership
-            .mockResolvedValueOnce({ data: { id: 'log-1' }, error: null }); // insert
+        mockSupabase.single
+            .mockResolvedValueOnce({
+                data: { id: 'habit-1', user_id: 'user-123', is_private: false },
+                error: null
+            }) // habit check
+            .mockResolvedValueOnce({ data: { id: 'log-1' }, error: null }); // upsert result
 
         const request = new Request('http://localhost/api/habits/habit-1/log', {
             method: 'POST',

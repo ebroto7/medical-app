@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET, POST } from '@/app/api/habits/route';
 import { createClient } from '@/utils/supabase/server';
-import { requireAuth } from '@/lib/auth/api-helpers';
+import { requireAuth, canAccessPatientData } from '@/lib/auth/api-helpers';
 import RoleService from '@/services/auth/role.service';
 
 // Mock dependencies
@@ -16,6 +16,7 @@ vi.mock('@/utils/supabase/server', () => ({
 
 vi.mock('@/lib/auth/api-helpers', () => ({
     requireAuth: vi.fn(),
+    canAccessPatientData: vi.fn(),
 }));
 
 vi.mock('@/services/auth/role.service', () => ({
@@ -27,6 +28,11 @@ vi.mock('@/services/auth/role.service', () => ({
 // Mock Rate Limit to avoid issues
 vi.mock('@/lib/rate-limit', () => ({
     rateLimit: vi.fn(() => ({ success: true, headers: {} }))
+}));
+
+// Mock Audit Service
+vi.mock('@/services/audit.service', () => ({
+    auditSuccess: vi.fn(),
 }));
 
 describe('Habit Privacy API', () => {
@@ -157,9 +163,10 @@ describe('Habit Privacy API', () => {
         });
 
         it('should allow Nutritionist to create a habit for a Patient (defaults to allowed)', async () => {
-
             vi.mocked(requireAuth).mockResolvedValue({ id: nutritionistId, email: 'n@test.com' });
             vi.mocked(RoleService.getRoleForUser).mockResolvedValue('nutritionist');
+            // Mock: nutritionist is connected to this patient
+            vi.mocked(canAccessPatientData).mockResolvedValue(true);
 
             const request = new Request('http://localhost/api/habits', {
                 method: 'POST',

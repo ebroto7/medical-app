@@ -2,14 +2,16 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-
 import { HABIT_COLORS, HabitColor, DEFAULT_HABIT_COLOR } from "@/lib/constants/habits";
+import { isExpectedDay } from "@/lib/habits/streak-calculator";
 
 interface HabitCalendarProps {
   completedDates: string[]; // ISO date strings (YYYY-MM-DD)
   selectedMonth: Date;
   onMonthChange: (date: Date) => void;
   color?: string;
+  frequency?: "daily" | "weekly";
+  daysOfWeek?: number[] | null;
 }
 
 export const HabitCalendar = React.memo(function HabitCalendar({
@@ -17,6 +19,8 @@ export const HabitCalendar = React.memo(function HabitCalendar({
   selectedMonth,
   onMonthChange,
   color = DEFAULT_HABIT_COLOR,
+  frequency = "daily",
+  daysOfWeek = null,
 }: HabitCalendarProps) {
   const year = selectedMonth.getFullYear();
   const month = selectedMonth.getMonth();
@@ -109,17 +113,27 @@ export const HabitCalendar = React.memo(function HabitCalendar({
           const dateStr = formatDate(day);
           const isCompleted = completedSet.has(dateStr);
           const isTodayDate = isToday(day);
+          const isExpected = isExpectedDay(dateStr, { frequency, days_of_week: daysOfWeek });
+          const isWeeklyHabit = frequency === "weekly" && daysOfWeek && daysOfWeek.length > 0;
 
           return (
             <div
               key={day}
               className={cn(
                 "aspect-square rounded-lg flex items-center justify-center text-sm transition-all",
+                // Completed state (highest priority)
                 isCompleted && habitColor.bg,
                 isCompleted && "text-white font-medium",
-                !isCompleted && "text-muted-foreground",
-                isTodayDate && !isCompleted && `ring-2 ${habitColor.ring} ring-inset`
+                // Today indicator
+                isTodayDate && !isCompleted && `ring-2 ${habitColor.ring} ring-inset`,
+                // Expected day (not completed) - show with subtle indicator
+                !isCompleted && isExpected && !isTodayDate && "text-foreground bg-muted/50",
+                // Not expected day (for weekly habits only)
+                !isCompleted && !isExpected && isWeeklyHabit && "text-muted-foreground/40",
+                // Default: daily habit or fallback
+                !isCompleted && !isWeeklyHabit && !isTodayDate && "text-muted-foreground"
               )}
+              title={isWeeklyHabit && !isExpected ? "No programado este día" : undefined}
             >
               {day}
             </div>
@@ -128,7 +142,7 @@ export const HabitCalendar = React.memo(function HabitCalendar({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
+      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2 flex-wrap">
         <div className="flex items-center gap-1">
           <div className={cn("w-3 h-3 rounded", habitColor.bg)} />
           <span>Completado</span>
@@ -137,6 +151,18 @@ export const HabitCalendar = React.memo(function HabitCalendar({
           <div className={cn("w-3 h-3 rounded ring-2 ring-inset", habitColor.ring)} />
           <span>Hoy</span>
         </div>
+        {frequency === "weekly" && daysOfWeek && daysOfWeek.length > 0 && (
+          <>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-muted/50" />
+              <span>Programado</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-muted/20" />
+              <span>No programado</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

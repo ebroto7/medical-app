@@ -1,11 +1,16 @@
 import { createClient } from "@/utils/supabase/server";
-import { requireAuth } from "@/lib/auth/api-helpers";
+import { requireAuth, canAccessPatientData } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
 import { rateLimit } from "@/lib/rate-limit";
+import { auditSuccess } from "@/services/audit.service";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
+import {
+  calculateSmartStreak,
+  getFrequencyLabel,
+  isExpectedDay,
+} from "@/lib/habits/streak-calculator";
 
-// Validation schemas
 import RoleService from "@/services/auth/role.service";
 
 // Validation schemas
@@ -21,6 +26,14 @@ const createHabitSchema = z.object({
 
 export async function GET(request: Request) {
   try {
+    const rateLimitResult = rateLimit(request, "api");
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: "Rate limit exceeded" },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const supabase = await createClient();
 
@@ -83,40 +96,35 @@ export async function GET(request: Request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Calculate stats based on context
+    // Calculate stats based on context using smart streak calculator
     const habitsWithStats = (habits || []).map((habit) => {
       const logs = habit.habit_logs || [];
-      const sortedLogs = logs
-        .map((l: { completed_at: string }) => l.completed_at)
-        .sort((a: string, b: string) => b.localeCompare(a)); // Most recent first
 
-      // Calculate current streak (up to context date)
-      let currentStreak = 0;
-      const checkDate = new Date(contextDate.getFullYear(), contextDate.getMonth(), contextDate.getDate());
-
-      for (const logDate of sortedLogs) {
-        // We only count streaks up to the check date
-        if (logDate > contextDateStr) continue;
-
-        const checkStr = checkDate.toISOString().split("T")[0];
-        if (logDate === checkStr) {
-          currentStreak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else if (logDate < checkStr) {
-          // Break if we've started counting or if we missed a day before contextDate
-          if (currentStreak > 0 || logDate !== contextDateStr) {
-            break;
-          }
-        }
-      }
-
-      // Check completion status for the requested/context date
-      const completedToday = sortedLogs.includes(contextDateStr);
+      // Use smart streak calculator that respects frequency/days_of_week
+      const streakResult = calculateSmartStreak(
+        {
+          frequency: habit.frequency || "daily",
+          days_of_week: habit.days_of_week,
+        },
+        logs,
+        contextDateStr
+      );
 
       return {
         ...habit,
-        currentStreak,
-        completedToday,
+        // Core streak data
+        currentStreak: streakResult.currentStreak,
+        streakUnit: streakResult.streakUnit,
+        completedToday: streakResult.completedToday,
+        expectedToday: streakResult.expectedToday,
+        // Weekly progress (only for weekly habits)
+        weeklyProgress: streakResult.weeklyProgress,
+        // Human-readable frequency label
+        frequencyLabel: getFrequencyLabel({
+          frequency: habit.frequency || "daily",
+          days_of_week: habit.days_of_week,
+        }),
+        // Logs for calendar/heatmap
         logsThisMonth: logs.filter(
           (l: { completed_at: string }) =>
             l.completed_at >= startOfMonth && l.completed_at <= endOfMonth
@@ -161,6 +169,14 @@ export async function POST(request: Request) {
     const createdBy = user.id;
 
     if (role === "nutritionist" && validated.targetUserId) {
+        // Verify nutritionist is connected to this patient
+        const hasAccess = await canAccessPatientData(user.id, validated.targetUserId);
+        if (!hasAccess) {
+          return Response.json(
+            { error: "No tienes acceso a este paciente" },
+            { status: 403 }
+          );
+        }
         // Nutritionist creating for patient
         finalUserId = validated.targetUserId;
         isPrivate = false; // Forced public so both can see
@@ -196,10 +212,23 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    // Audit log habit creation
+    await auditSuccess(
+      request,
+      user.id,
+      "habit.create",
+      "habit",
+      data.id,
+      {
+        targetUserId: finalUserId,
+        isPrivate,
+        isNutritionistAssignment: finalUserId !== user.id
+      }
+    );
+
     logger.info({ userId: user.id, habitId: data.id }, "Habit created");
     return Response.json({ data }, { status: 201 });
   } catch (error) {
-    console.error("DEBUG POST ERROR:", error); // DEBUG LOG
     if (error instanceof AuthenticationError) {
       return Response.json({ error: error.message }, { status: 401 });
     }

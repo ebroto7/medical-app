@@ -50,6 +50,13 @@ export type AuditAction =
   | "comment.create"
   | "comment.update"
   | "comment.delete"
+  // Habits
+  | "habit.create"
+  | "habit.update"
+  | "habit.delete"
+  | "habit.log"
+  | "habit.unlog"
+  | "habit.comment"
   // Security Events
   | "security.suspicious_activity"
   | "security.potential_attack"

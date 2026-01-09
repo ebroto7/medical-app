@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { requireAuth } from "@/lib/auth/api-helpers";
 import { AuthenticationError } from "@/lib/auth/errors";
+import { rateLimit } from "@/lib/rate-limit";
+import { auditSuccess } from "@/services/audit.service";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
 
@@ -19,6 +21,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rateLimitResult = rateLimit(request, "api");
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: "Rate limit exceeded" },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const { id } = await params;
     const body = await request.json();
@@ -72,6 +82,16 @@ export async function PATCH(
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    // Audit log habit update
+    await auditSuccess(
+      request,
+      user.id,
+      "habit.update",
+      "habit",
+      id,
+      { updatedFields: Object.keys(validated) }
+    );
+
     logger.info({ userId: user.id, habitId: id }, "Habit updated");
     return Response.json({ data });
   } catch (error) {
@@ -94,6 +114,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rateLimitResult = rateLimit(request, "strict");
+    if (!rateLimitResult.success) {
+      return Response.json(
+        { error: "Rate limit exceeded" },
+        { status: 429, headers: rateLimitResult.headers }
+      );
+    }
+
     const user = await requireAuth();
     const { id } = await params;
 
@@ -126,6 +154,16 @@ export async function DELETE(
       logger.error({ error, userId: user.id, habitId: id }, "Error deleting habit");
       return Response.json({ error: error.message }, { status: 500 });
     }
+
+    // Audit log habit deletion
+    await auditSuccess(
+      request,
+      user.id,
+      "habit.delete",
+      "habit",
+      id,
+      { habitOwnerId: existing.user_id }
+    );
 
     logger.info({ userId: user.id, habitId: id }, "Habit deleted");
     return Response.json({ success: true });

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Habit } from "./HabitCard";
 import { HABIT_COLORS, HabitColor, DEFAULT_HABIT_COLOR } from "@/lib/constants/habits";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { isExpectedDay } from "@/lib/habits/streak-calculator";
 
 interface HabitHeatmapProps {
   habits: Habit[];
@@ -65,6 +66,7 @@ export function HabitHeatmap({
           {habits.map((habit) => {
             const completedDates = new Set(habit.logsThisMonth.map(l => l.completed_at));
             const colorConfig = HABIT_COLORS[habit.color as HabitColor] || HABIT_COLORS[DEFAULT_HABIT_COLOR];
+            const isWeeklyHabit = habit.frequency === "weekly" && habit.days_of_week && habit.days_of_week.length > 0;
 
             return (
               <div key={habit.id} className="flex items-center group">
@@ -74,6 +76,11 @@ export function HabitHeatmap({
                   <span className="text-sm font-medium truncate" title={habit.name}>
                     {habit.name}
                   </span>
+                  {isWeeklyHabit && habit.frequencyLabel && (
+                    <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded">
+                      {habit.frequencyLabel}
+                    </span>
+                  )}
                 </div>
 
                 {/* Heatmap Grid for this habit */}
@@ -82,6 +89,16 @@ export function HabitHeatmap({
                     const dateStr = formatDate(day);
                     const isCompleted = completedDates.has(dateStr);
                     const isCurrentDay = isToday(day);
+                    const isExpected = isExpectedDay(dateStr, {
+                      frequency: habit.frequency as "daily" | "weekly" || "daily",
+                      days_of_week: habit.days_of_week
+                    });
+
+                    // Determine tooltip message
+                    let tooltipMessage = isCompleted ? "Completado" : "Pendiente";
+                    if (!isExpected && !isCompleted) {
+                      tooltipMessage = "No programado";
+                    }
 
                     return (
                       <TooltipProvider key={day}>
@@ -89,23 +106,30 @@ export function HabitHeatmap({
                           <TooltipTrigger asChild>
                             <button
                               onClick={() => {
-                      if (readOnly) return;
-                      onToggle(habit.id, !isCompleted, dateStr);
-                    }}
+                                if (readOnly) return;
+                                onToggle(habit.id, !isCompleted, dateStr);
+                              }}
                               className={cn(
                                 "aspect-square rounded-sm transition-all duration-200",
-                                isCompleted 
-                                  ? colorConfig.bg 
-                                  : "bg-muted/40 hover:bg-muted",
+                                // Completed state (highest priority)
+                                isCompleted && colorConfig.bg,
+                                // Today indicator
                                 isCurrentDay && !isCompleted && `ring-1 ring-inset ${colorConfig.ring}`,
+                                // Expected day not completed
+                                !isCompleted && isExpected && "bg-muted/50 hover:bg-muted",
+                                // Not expected day (for weekly habits)
+                                !isCompleted && !isExpected && isWeeklyHabit && "bg-muted/20 hover:bg-muted/30",
+                                // Default (daily habit, not completed)
+                                !isCompleted && !isWeeklyHabit && "bg-muted/40 hover:bg-muted",
+                                // Hover effects
                                 "opacity-80 hover:opacity-100"
                               )}
-                              aria-label={`${habit.name} - ${day}`}
+                              aria-label={`${habit.name} - ${day}${!isExpected ? " (no programado)" : ""}`}
                             />
                           </TooltipTrigger>
                           <TooltipContent side="top">
                             <p className="text-xs">
-                              {day} {currentDate.toLocaleDateString("es-ES", { month: "short" })}: {isCompleted ? "Completado" : "Pendiente"}
+                              {day} {currentDate.toLocaleDateString("es-ES", { month: "short" })}: {tooltipMessage}
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -117,6 +141,24 @@ export function HabitHeatmap({
             );
           })}
         </div>
+
+        {/* Legend */}
+        {habits.some(h => h.frequency === "weekly" && h.days_of_week?.length) && (
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-4 flex-wrap border-t mt-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-primary" />
+              <span>Completado</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-muted/50" />
+              <span>Programado</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-muted/20" />
+              <span>No programado</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
